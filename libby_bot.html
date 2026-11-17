@@ -1,0 +1,1159 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Librarian AI Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centered column. Top bar = brand, pill tabs with a sliding marker, progress ring. Each module is one focused work area.
+   Look: beige paper, ink text, deep green accent, orange only for the query marker. Single light theme by choice. */
+:root{
+  --bg:#ece3d1; --bg2:#e2d6bd; --paper:#f8f3e8; --paper2:#f0e8d7; --ink:#27221a; --muted:#6f6552;
+  --line:#d8ccb4; --line2:#c6b799; --accent:#2c5a4c; --accent2:#4a8a72; --accent-soft:rgba(44,90,76,.12);
+  --pop:#d9692a; --pop-soft:rgba(217,105,42,.15); --ok:#2f7a4f; --ok-soft:rgba(47,122,79,.15);
+  --warn:#9a5f0e; --warn-soft:rgba(169,106,18,.16);
+  --code:#221d16; --code-fg:#efe6d3; --code-dim:#9a8d75;
+  --shadow:0 1px 0 rgba(255,255,255,.7) inset,0 14px 28px -20px rgba(70,45,10,.45);
+  --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --font-body:"DM Sans","Segoe UI",system-ui,sans-serif;
+  --font-mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-block:18px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;z-index:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .36  0 0 0 0 .2  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.page{position:relative;z-index:1;max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+h2,h3,h4{font-family:var(--font-display);margin:0;line-height:1.15;text-wrap:balance}
+h2{font-size:clamp(28px,4.6vw,42px);font-weight:700;letter-spacing:-.02em}
+h4{font-family:var(--font-body);font-size:15px;font-weight:600;line-height:1.3}
+p{margin:0}
+.dim{color:var(--muted)}
+.mono{font-family:var(--font-mono)}
+button{font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* top bar */
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font:700 18px var(--font-display);letter-spacing:-.01em;white-space:nowrap}
+.logo{width:36px;height:36px;border-radius:11px;background:var(--accent);display:grid;place-items:center;box-shadow:0 8px 16px -8px var(--accent)}
+.tabs{position:relative;display:flex;gap:2px;padding:4px;background:var(--paper2);border:1px solid var(--line);border-radius:99px;overflow-x:auto;max-width:100%;scrollbar-width:none;box-shadow:inset 0 1px 3px rgba(70,45,10,.1)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .ind{position:absolute;left:0;top:4px;bottom:4px;width:0;border-radius:99px;background:var(--accent);transition:transform .35s cubic-bezier(.3,1.2,.4,1),width .35s cubic-bezier(.3,1.2,.4,1);box-shadow:0 6px 14px -6px var(--accent)}
+.tabs button{position:relative;z-index:1;flex:none;background:none;border:0;border-radius:99px;padding:8px 15px;font:500 14px var(--font-body);color:var(--muted);cursor:pointer;transition:color .2s}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:#fff}
+.rwrap{position:relative}
+.ring{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:5px 12px 5px 6px;cursor:pointer;font:500 13px var(--font-mono);color:var(--ink);box-shadow:var(--shadow);transition:transform .15s}
+.ring:hover{transform:translateY(-1px)}
+.ring svg{display:block}
+.ring .arc{stroke:var(--accent);stroke-dasharray:94.25;stroke-dashoffset:94.25;transition:stroke-dashoffset .6s cubic-bezier(.3,1,.4,1);transform:rotate(-90deg);transform-origin:50% 50%}
+.ring.full .arc{stroke:var(--ok)}
+.pop{position:absolute;right:0;top:calc(100% + 8px);width:250px;background:var(--paper);border:1px solid var(--line2);border-radius:16px;padding:14px;box-shadow:0 24px 48px -20px rgba(60,40,10,.55);z-index:30;animation:rise .2s both}
+.pop h4{margin-bottom:10px}
+.tasks,.chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.tasks li,.chk li{display:flex;gap:9px;align-items:center;transition:color .2s}
+.tick{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2);flex:none;display:grid;place-items:center;font-size:10px;color:transparent;transition:all .25s cubic-bezier(.3,1.6,.4,1)}
+li.on .tick{background:var(--ok);border-color:var(--ok);color:#fff;transform:scale(1.1)}
+li.on{color:var(--muted)}
+/* panes */
+.pane{display:flex;flex-direction:column;gap:20px;animation:paneIn .4s cubic-bezier(.2,.8,.3,1) both}
+.head{display:flex;flex-direction:column;gap:6px}
+.head p{color:var(--muted);font-size:16px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.cols.wl{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)}
+@media (max-width:820px){.cols,.cols.wl{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0;box-shadow:var(--shadow)}
+.panel.acc{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.ph{display:flex;align-items:center;gap:10px;font:600 12px var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.ph .big{margin-left:auto;font:700 30px/1 var(--font-display);letter-spacing:-.02em;color:var(--ink);text-transform:none}
+.ph .big.bump{animation:bump .45s cubic-bezier(.3,1.6,.4,1)}
+.lat{font:500 11.5px var(--font-mono);letter-spacing:0;text-transform:none;color:var(--ok);background:var(--ok-soft);padding:2px 8px;border-radius:99px}
+.lat:empty{display:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.between{justify-content:space-between}
+.list{display:flex;flex-direction:column;gap:10px}
+.foot{display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap}
+/* inputs */
+.field{position:relative}
+.field svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+input[type=text],select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:10px 13px;width:100%;min-width:0;transition:border-color .15s,box-shadow .15s}
+.field input{font-size:18px;padding:16px 18px 16px 50px;border-radius:18px;box-shadow:var(--shadow)}
+input[type=text]:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+textarea{resize:vertical;min-height:80px;font-size:14px}
+label.f,div.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:var(--muted);min-width:0}
+label.f .hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.v{font:500 12.5px var(--font-mono);color:var(--accent);background:var(--accent-soft);padding:1px 8px;border-radius:99px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;cursor:pointer;
+  background:linear-gradient(var(--accent),var(--accent)) 0/var(--p,50%) 100% no-repeat,var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--paper);border:2.5px solid var(--accent);box-shadow:0 3px 8px rgba(60,40,10,.3);transition:transform .15s}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--paper);border:2.5px solid var(--accent);box-shadow:0 3px 8px rgba(60,40,10,.3)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18)}
+.sw{display:flex;gap:10px;align-items:center;cursor:pointer;font-size:14px;position:relative}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw i{width:40px;height:23px;border-radius:99px;background:var(--line2);position:relative;transition:background .2s;flex:none}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .25s cubic-bezier(.3,1.5,.4,1);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+i{background:var(--accent)}
+.sw input:checked+i::after{transform:translateX(17px)}
+.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+/* buttons and chips */
+.btn{font:600 14px var(--font-body);background:var(--accent);color:#fff;border:0;border-radius:99px;padding:11px 20px;cursor:pointer;box-shadow:0 10px 18px -10px var(--accent);transition:transform .15s,box-shadow .15s,background .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 14px 22px -10px var(--accent)}
+.btn:active{transform:scale(.96)}
+.btn.ghost{background:var(--paper2);color:var(--ink);box-shadow:none;border:1px solid var(--line2)}
+.btn.big{padding:14px 26px;font-size:15px}
+.btn:disabled{opacity:.55;cursor:wait;transform:none}
+.chip{display:inline-flex;align-items:center;gap:5px;font:500 13px var(--font-body);border:1px solid var(--line);background:var(--paper2);color:var(--ink);border-radius:99px;padding:4px 12px;text-decoration:none;white-space:nowrap}
+button.chip,a.chip{cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+button.chip:hover,a.chip:hover{transform:translateY(-2px);border-color:var(--accent);background:var(--paper)}
+button.chip:active{transform:scale(.96)}
+.chip.acc{background:var(--accent-soft);border-color:transparent;color:var(--accent);animation:rise .3s both}
+.chip.grn{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.chip.amb{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.seg{display:inline-flex;flex-wrap:wrap;gap:3px;padding:3px;border-radius:99px;background:var(--paper2);border:1px solid var(--line)}
+.seg button{border:0;background:none;color:var(--muted);font:500 13px var(--font-body);padding:6px 13px;border-radius:99px;cursor:pointer;transition:all .2s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);box-shadow:0 2px 6px rgba(60,40,10,.18)}
+.pill{font:600 11.5px var(--font-body);border-radius:99px;padding:1px 9px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.out{background:var(--warn-soft);color:var(--warn)}
+/* result cards */
+.rec{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--paper2);min-width:0;animation:rise .45s var(--d,0ms) both;transition:transform .2s,box-shadow .2s,border-color .2s}
+.rec:hover{transform:translateY(-2px);box-shadow:0 14px 22px -16px rgba(70,45,10,.5);border-color:var(--line2)}
+.rec.hit{background:var(--paper);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.rk{flex:none;width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;font:500 12.5px var(--font-mono);display:grid;place-items:center}
+.rb{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.rb h4{overflow-wrap:anywhere}
+.m{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.cn{font:500 12px var(--font-mono);color:var(--ink);background:var(--bg);padding:0 7px;border-radius:6px}
+.kv{font-size:13px;color:var(--muted)}
+.kv b{color:var(--ink);font-weight:600}
+.sim{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.sim i{display:block;height:100%;width:var(--w);background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;animation:grow .7s cubic-bezier(.3,1,.4,1) var(--d,0ms) both}
+.empty{border:1.5px dashed var(--line2);border-radius:14px;padding:16px;color:var(--muted);font-size:14px;text-align:center}
+/* code */
+.codewrap{position:relative;min-width:0;border-radius:14px;overflow:hidden;background:var(--code)}
+.codewrap::before{content:attr(data-file);display:block;padding:9px 12px 9px 70px;font:500 12px var(--font-mono);color:var(--code-dim);border-bottom:1px solid #ffffff14;background:radial-gradient(circle at 18px 50%,#ff5f57 4.5px,transparent 5.5px),radial-gradient(circle at 36px 50%,#febc2e 4.5px,transparent 5.5px),radial-gradient(circle at 54px 50%,#28c840 4.5px,transparent 5.5px),#ffffff08}
+.codewrap .cp{position:absolute;top:5px;right:8px;font:500 12px var(--font-body);background:#ffffff1c;color:var(--code-fg);border:0;border-radius:99px;padding:3px 11px;cursor:pointer;transition:background .15s}
+.codewrap .cp:hover{background:#ffffff33}
+pre.code{color:var(--code-fg);padding:13px 15px;margin:0;overflow-x:auto;font:12.5px/1.7 var(--font-mono);max-width:100%}
+pre.code .c{color:var(--code-dim)}
+details.more>summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px;color:var(--accent);width:fit-content}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:"+";display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);transition:transform .25s}
+details.more[open]>summary::before{transform:rotate(45deg)}
+details.more>div{margin-top:12px;animation:rise .3s both}
+/* step bar */
+.steps{display:flex;align-items:center;gap:10px}
+.steps i{flex:1;height:2px;background:var(--line2);border-radius:2px;max-width:80px;position:relative;overflow:hidden}
+.steps i::after{content:"";position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .4s}
+.steps i.on::after{transform:scaleX(1)}
+.stp{display:flex;align-items:center;gap:9px;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:6px 16px 6px 6px;font:600 14px var(--font-body);color:var(--muted);cursor:pointer;transition:all .2s}
+.stp b{width:26px;height:26px;border-radius:50%;background:var(--paper2);display:grid;place-items:center;font:500 13px var(--font-mono);transition:all .2s}
+.stp:hover{transform:translateY(-2px)}
+.stp.on{color:var(--ink);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.stp.on b,.stp.done b{background:var(--accent);color:#fff}
+.stp.done{color:var(--ink)}
+.spane{animation:paneIn .35s both}
+/* viz */
+.vb{display:flex;align-items:flex-end;gap:4px;height:130px;padding-bottom:2px;border-bottom:1.5px solid var(--line2)}
+.vb span{flex:1;min-width:0;height:var(--h);border-radius:4px 4px 0 0;background:var(--accent);transform-origin:bottom;animation:vgrow .6s cubic-bezier(.3,1.2,.4,1) var(--d,0ms) both;transition:filter .15s}
+.vb span.o{background:var(--line2)}
+.vb span.z{opacity:.35}
+.vb span:hover{filter:brightness(1.25)}
+svg text{font-family:var(--font-body)}
+.pt{transform-box:fill-box;transform-origin:center;animation:pop .45s cubic-bezier(.3,1.6,.4,1) both}
+.qm{transform-box:fill-box;transform-origin:center;animation:pop .5s cubic-bezier(.3,1.6,.4,1) .15s both}
+.ping{transform-box:fill-box;transform-origin:center;animation:ping 1.8s ease-out infinite}
+.scroll-x{overflow-x:auto}
+.bs{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-right:12px}
+.bs::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--line2)}
+.bs.run::before{background:var(--pop);animation:blink .7s infinite}
+.bs.done{color:var(--ink)}.bs.done::before{background:var(--ok)}
+.trace{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.trace span{font:500 12.5px var(--font-mono);background:var(--paper2);border:1px solid var(--line);border-radius:99px;padding:3px 11px}
+.trace i{width:14px;height:2px;background:var(--line2);border-radius:2px}
+/* chat */
+.app{border:1px solid var(--line2);border-radius:20px;background:var(--paper);overflow:hidden;box-shadow:var(--shadow)}
+.app .bar2{display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--paper2);border-bottom:1px solid var(--line)}
+.app .dots{display:flex;gap:6px}.app .dots i{width:10px;height:10px;border-radius:50%;background:var(--line2)}
+.app .url{flex:1;max-width:240px;font:12.5px var(--font-mono);color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:2px 12px}
+.app .body{padding:20px;display:flex;flex-direction:column;gap:14px;min-height:440px}
+.app h3{font-size:28px;letter-spacing:-.015em}
+.boot{display:flex;flex-direction:column;gap:16px;align-items:flex-start;margin:auto 0}
+.term{background:var(--code);color:var(--code-fg);border-radius:12px;padding:13px 15px;font:13px/1.8 var(--font-mono);display:flex;flex-direction:column;width:100%}
+.term .ok{color:#7be0ae}
+.term div{animation:rise .25s both}
+.msgs{display:flex;flex-direction:column;gap:14px;flex:1;max-height:420px;overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+.msg{display:flex;gap:10px;animation:rise .3s both}
+.msg .av{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font:500 11px var(--font-mono);background:var(--accent);color:#fff}
+.msg.user{flex-direction:row-reverse}
+.msg.user .av{background:var(--line2);color:var(--ink)}
+.msg .bub{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:88%}
+.msg.user .bub{align-items:flex-end}
+.msg .txt{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--paper2);border:1px solid var(--line);padding:10px 14px;border-radius:5px 16px 16px 16px}
+.msg.user .txt{background:var(--accent);color:#fff;border-color:transparent;border-radius:16px 5px 16px 16px}
+.src{display:flex;flex-direction:column;gap:8px;transition:opacity .4s,transform .4s}
+.src.hide{opacity:0;transform:translateY(8px);pointer-events:none}
+.think{display:flex;gap:5px;padding:12px 14px;background:var(--paper2);border-radius:5px 16px 16px 16px;width:fit-content}
+.think i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.think i:nth-child(2){animation-delay:.15s}.think i:nth-child(3){animation-delay:.3s}
+.chatform{display:flex;gap:8px}
+.chatform input{border-radius:99px;padding-left:18px}
+.mb{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;border:1.5px solid transparent;transition:border-color .3s,background .3s}
+.mb.pick{border-color:var(--accent);background:var(--accent-soft)}
+.mb .tl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.mb .tr{height:22px;background:var(--line);border-radius:8px;overflow:hidden}
+.mb .tr i{display:block;height:100%;width:1%;border-radius:8px;background:var(--accent);transition:width .6s cubic-bezier(.3,1,.4,1)}
+.mb[data-k="ivf"] .tr i{background:var(--pop)}
+.mb[data-k="pq"] .tr i{background:var(--accent2)}
+.bignum{font:700 clamp(30px,5vw,44px)/1 var(--font-display);letter-spacing:-.02em}
+/* guide */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.tiles{grid-template-columns:minmax(0,1fr)}}
+.tile{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow);transition:transform .2s}
+.tile:hover{transform:translateY(-3px)}
+.tile .n{font:500 12px var(--font-mono);color:var(--accent)}
+details.acc{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+details.acc>summary{cursor:pointer;list-style:none;display:flex;gap:12px;align-items:center;padding:14px 16px;font-weight:600}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary .tm{margin-left:auto;font:500 12px var(--font-mono);color:var(--muted)}
+details.acc>summary::after{content:"+";font-size:20px;color:var(--accent);transition:transform .25s;line-height:1}
+details.acc[open]>summary::after{transform:rotate(45deg)}
+details.acc>div{padding:0 16px 16px;display:grid;grid-template-columns:54px minmax(0,1fr);gap:8px 12px;font-size:14px;animation:rise .3s both}
+details.acc b{font:600 11px var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);padding-top:3px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:10px 20px;border-radius:99px;font-size:14px;z-index:40;max-width:calc(100% - 32px);box-shadow:0 14px 30px -10px rgba(0,0,0,.5);animation:rise .25s both}
+.dt{min-width:900px;display:flex;flex-direction:column}
+.dr{display:grid;grid-template-columns:minmax(220px,2.2fr) minmax(120px,1fr) 52px minmax(150px,1.4fr) 128px 96px 34px;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);transition:background .15s;font-size:14px}
+.dr:not(.h):hover{background:var(--paper2)}
+.dr.h{font:600 11.5px var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.dr .t{font-weight:600;overflow-wrap:anywhere}
+.dr .x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;border-radius:50%;width:28px;height:28px;transition:background .15s,color .15s,transform .15s}
+.dr .x:hover{background:var(--warn-soft);color:var(--warn);transform:scale(1.1)}
+.tag{font:500 11px var(--font-mono);border-radius:6px;padding:1px 6px;margin-left:6px;background:var(--paper2);color:var(--muted);vertical-align:middle}
+.tag.y{background:var(--accent-soft);color:var(--accent)}
+.tag.t{background:var(--pop-soft);color:var(--pop)}
+.bignum.bump{animation:bump .45s cubic-bezier(.3,1.6,.4,1)}
+.mb[data-b="ivf"] .tr i{background:var(--pop)}
+.ht{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.ht th{font:600 11px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 10px;border-bottom:1px solid var(--line2)}
+.ht td{padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--font-mono);white-space:nowrap}
+.apane{animation:paneIn .3s both}
+@keyframes paneIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes grow{from{width:0}}
+@keyframes vgrow{from{transform:scaleY(0)}}
+@keyframes pop{from{opacity:0;transform:scale(.2)}}
+@keyframes ping{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.6);opacity:0}}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+@media (max-width:760px){.top{display:grid;grid-template-columns:minmax(0,1fr) auto}.tabs{grid-column:1/-1;order:3}}
+@media (max-width:520px){.steps{flex-wrap:wrap;gap:8px}.steps i{display:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="page">
+<header class="top">
+  <div class="brand"><span class="logo"><svg width="22" height="22" viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="4" width="28" height="26" rx="5" fill="none" stroke="#fff" stroke-width="2.6"/><path d="M12 4v26" stroke="#fff" stroke-width="2.6"/><path d="M12 17l11-6M12 17l11 7" stroke="#bfe8d6" stroke-width="2.6" stroke-linecap="round"/><circle cx="24" cy="11" r="3" fill="#bfe8d6"/><circle cx="24" cy="24" r="3" fill="#bfe8d6"/></svg></span>Librarian AI Lab</div>
+  <nav class="tabs" role="tablist" aria-label="Modules" id="tabs"><i class="ind" id="ind"></i>
+    <button role="tab" data-tab="search">Search</button>
+    <button role="tab" data-tab="index">Index</button>
+    <button role="tab" data-tab="query">Query</button>
+    <button role="tab" data-tab="chat">Chatbot</button>
+    <button role="tab" data-tab="scale">Scale</button>
+    <button role="tab" data-tab="data">Data</button>
+  </nav>
+  <div class="rwrap">
+    <button class="ring" id="ringBtn" aria-expanded="false" aria-controls="pop" aria-label="Lab progress">
+      <svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="none" stroke="var(--line)" stroke-width="4"/><circle class="arc" id="ringArc" cx="17" cy="17" r="15" fill="none" stroke-width="4" stroke-linecap="round"/></svg>
+      <span id="ringN">0/10</span>
+    </button>
+    <div class="pop" id="pop" hidden><h4>Lab progress</h4><ul class="tasks" id="taskList"></ul></div>
+  </div>
+</header>
+
+<main>
+<!-- SEARCH -->
+<section class="pane" id="pane-search" hidden>
+  <div class="head"><h2>Search by meaning</h2><p>One question, two engines.</p></div>
+  <div class="field"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input type="text" id="q1" value="books about space travel" autocomplete="off" aria-label="Patron question"></div>
+  <div class="row" id="chips1"></div>
+  <div class="row" id="concepts1"></div>
+  <div class="cols">
+    <div class="panel"><div class="ph">Keyword<b class="big" id="c1k">0</b></div><div class="list" id="kwRes"></div></div>
+    <div class="panel acc"><div class="ph">Meaning<span class="lat" id="lat1"></span><b class="big" id="c1s">0</b></div><div class="list" id="semRes"></div></div>
+  </div>
+</section>
+
+<!-- INDEX -->
+<section class="pane" id="pane-index" hidden>
+  <div class="head"><h2>Build the index</h2><p>Records in, vectors out.</p></div>
+  <div class="steps" id="steps"><button class="stp on" data-s="1"><b>1</b>Extract</button><i></i><button class="stp" data-s="2"><b>2</b>Embed</button><i></i><button class="stp" data-s="3"><b>3</b>Index</button></div>
+
+  <div class="spane panel" data-s="1">
+    <div class="row between">
+      <div class="seg" id="fmtSeg"><button data-f="marc" aria-pressed="true">MARC</button><button data-f="dc" aria-pressed="false">Dublin Core</button><button data-f="arc" aria-pressed="false">Archive</button></div>
+      <select id="recPick" aria-label="Record" style="max-width:300px"></select>
+    </div>
+    <div class="cols">
+      <div class="codewrap" data-file="source_record"><pre class="code" id="rawRec"></pre></div>
+      <div class="list"><span class="kv">Text sent to the model</span><div class="rec mono" id="embText" style="font-size:12.5px;display:block"></div></div>
+    </div>
+    <a class="chip acc" href="#data" style="align-self:flex-start">Add your own records in Data</a>
+    <div class="foot"><span class="kv"><b id="nRec">30</b> records</span><button class="btn" data-go="2">Embed →</button></div>
+  </div>
+
+  <div class="spane panel" data-s="2" hidden>
+    <div class="vb-wrap"><div id="vecBars"></div><div class="row between" style="margin-top:8px"><span class="kv">26 topic dims</span><span class="kv">hashed words</span></div></div>
+    <div class="row" id="vecChips"></div>
+    <div class="kv mono" id="vecNums"></div>
+    <div class="foot"><span class="kv" id="embedStatus"></span><button class="btn ghost" id="embedAll">Embed all</button><button class="btn" data-go="3">Index →</button></div>
+  </div>
+
+  <div class="spane cols" data-s="3" hidden>
+    <div class="panel">
+      <div class="seg" id="typeSeg" style="align-self:flex-start"><button data-t="flat" aria-pressed="true">Flat · exact</button><button data-t="ivf" aria-pressed="false">IVF · fast</button></div>
+      <label class="f" id="nlistWrap" for="nlist" hidden><span class="hd"><span>Clusters (nlist)</span><span class="v" id="nlistV">4</span></span><input type="range" id="nlist" min="2" max="8" value="4"></label>
+      <label class="sw"><input type="checkbox" id="normChk" checked><i></i><span>Normalize vectors</span></label>
+      <div class="row"><button class="btn" id="buildBtn">Build index</button></div>
+      <div id="idxStatus" class="kv" style="min-height:22px"></div>
+      <div class="codewrap" data-file="build_index.py"><pre class="code" id="idxCode"></pre><button class="cp" data-copy="idxCode">Copy</button></div>
+    </div>
+    <div class="panel"><div class="ph">Catalog map</div><div class="scroll-x"><div id="scatterIdx"></div></div></div>
+  </div>
+</section>
+
+<!-- QUERY -->
+<section class="pane" id="pane-query" hidden>
+  <div class="head"><h2>Query the index</h2><p>Closest records win.</p></div>
+  <div class="field"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input type="text" id="q3" value="modern architecture" autocomplete="off" aria-label="Patron query"></div>
+  <div class="row" id="chips3"></div>
+  <div class="cols wl">
+    <div class="panel">
+      <div class="ph">Top results<span class="lat" id="lat3"></span></div>
+      <div class="trace" id="qSteps"></div>
+      <div class="list" id="qRes"></div>
+    </div>
+    <div class="list">
+      <div class="panel">
+        <label class="f" for="kK"><span class="hd"><span>Results (k)</span><span class="v" id="kV">5</span></span><input type="range" id="kK" min="1" max="10" value="5"></label>
+        <div class="seg" id="metricSeg" style="align-self:flex-start"><button data-m="cos" aria-pressed="true">Cosine</button><button data-m="l2" aria-pressed="false">L2</button></div>
+        <label class="f" id="nprobeWrap" for="nprobe" hidden><span class="hd"><span>Clusters searched (nprobe)</span><span class="v" id="nprobeV">2</span></span><input type="range" id="nprobe" min="1" max="4" value="2"></label>
+        <p class="kv" id="idxNote"></p>
+      </div>
+      <div class="panel"><div class="scroll-x"><div id="scatterQ"></div></div></div>
+      <details class="more"><summary>Show code</summary><div class="codewrap" data-file="search.py"><pre class="code" id="qCode"></pre><button class="cp" data-copy="qCode">Copy</button></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- CHAT -->
+<section class="pane" id="pane-chat" hidden>
+  <div class="head"><h2>Chatbot</h2><p>Run it, ask it, change it.</p></div>
+  <div class="cols wl">
+    <div class="app">
+      <div class="bar2"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8501</span></div>
+      <div class="body" id="appBody"></div>
+    </div>
+    <div class="list">
+      <div class="panel"><div class="ph">Lab steps</div><ul class="chk" id="chatChk"></ul></div>
+      <div class="panel">
+        <div class="ph">Customize</div>
+        <label class="f" for="cTitle"><span>Title</span><input type="text" id="cTitle" value="Library Assistant"></label>
+        <div class="f"><span class="kv">Persona</span><div class="seg" id="personaSeg"><button data-p="friendly" aria-pressed="true">Friendly</button><button data-p="concise" aria-pressed="false">Concise</button><button data-p="academic" aria-pressed="false">Academic</button><button data-p="kids" aria-pressed="false">Kids</button></div></div>
+        <label class="f" for="cK"><span class="hd"><span>Retrieved results (k)</span><span class="v" id="cKV">3</span></span><input type="range" id="cK" min="1" max="6" value="3"></label>
+        <label class="sw"><input type="checkbox" id="cRag" checked><i></i><span>Use the catalog (RAG)</span></label>
+        <details class="more"><summary>System prompt</summary><div><textarea id="cSys" aria-label="System prompt"></textarea></div></details>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="seg" id="insSeg" style="align-self:flex-start"><button data-i="rag" aria-pressed="true">RAG trace</button><button data-i="state" aria-pressed="false">session_state</button><button data-i="code" aria-pressed="false">streamlit_app.py</button></div>
+    <div id="insBody"></div>
+  </div>
+</section>
+
+<!-- SCALE -->
+<section class="pane" id="pane-scale" hidden>
+  <div class="head"><h2>Scale it up</h2><p>Drag to a real catalog size.</p></div>
+  <div class="cols wl">
+    <div class="panel">
+      <div class="row between"><span class="bignum" id="sNV"></span><div class="seg" id="dimSeg"><button data-d="384" aria-pressed="false">384</button><button data-d="768" aria-pressed="true">768</button><button data-d="1536" aria-pressed="false">1536</button></div></div>
+      <input type="range" id="sN" min="0" max="100" value="40" aria-label="Records in catalog">
+      <div class="list">
+        <div class="mb" data-k="flat"><div class="tl"><b>Flat</b><span class="mono dim" data-t></span></div><div class="tr"><i></i></div></div>
+        <div class="mb" data-k="ivf"><div class="tl"><b>IVF</b><span class="mono dim" data-t></span></div><div class="tr"><i></i></div></div>
+        <div class="mb" data-k="pq"><div class="tl"><b>IVFPQ</b><span class="mono dim" data-t></span></div><div class="tr"><i></i></div></div>
+      </div>
+      <p class="kv">Estimates. Test recall on real questions.</p>
+    </div>
+    <div class="list">
+      <div class="panel acc"><div class="ph">Use</div><h3 id="suggName" style="font-size:26px"></h3><p class="dim" id="suggWhy"></p>
+        <div class="codewrap" data-file="index_choice.py"><pre class="code" id="scaleCode"></pre><button class="cp" data-copy="scaleCode">Copy</button></div></div>
+      <div class="tiles" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="tile"><span class="n">HOST</span><h4>Streamlit Cloud or on-prem</h4></div>
+        <div class="tile"><span class="n">NEXT</span><h4>ILS APIs, tuned embeddings</h4></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA -->
+<section class="pane" id="pane-data" hidden>
+  <div class="head"><h2>Your data</h2><p>Browse it, add to it, push it until it slows down.</p></div>
+  <div class="tiles">
+    <div class="tile"><span class="n">RECORDS</span><b class="bignum" id="stTotal">30</b><span class="kv" id="stNote">in the lab now</span></div>
+    <div class="tile"><span class="n">YOURS</span><b class="bignum" id="stYours">0</b><span class="kv">added or imported</span></div>
+    <div class="tile"><span class="n">TEST</span><b class="bignum" id="stTest">0</b><span class="kv">generated</span></div>
+    <div class="tile"><span class="n">VECTORS</span><b class="bignum" id="stMem">0</b><span class="kv" id="stMemNote"></span></div>
+  </div>
+
+  <div class="panel">
+    <div class="row between">
+      <div class="seg" id="srcSeg"><button data-s="all" aria-pressed="true">All</button><button data-s="sample" aria-pressed="false">Sample</button><button data-s="yours" aria-pressed="false">Yours</button><button data-s="synthetic" aria-pressed="false">Test</button></div>
+      <input type="text" id="dbFilter" placeholder="Filter by title, author, subject or call no." aria-label="Filter records" style="max-width:340px">
+    </div>
+    <div class="scroll-x"><div class="dt" id="dbTable"></div></div>
+    <div class="foot"><span class="kv" id="dbCount"></span><button class="btn ghost" id="dbMore">Show 25 more</button></div>
+  </div>
+
+  <div class="panel">
+    <div class="row between"><div class="ph">Add data</div>
+      <div class="seg" id="addSeg"><button data-a="one" aria-pressed="true">One record</button><button data-a="bulk" aria-pressed="false">Paste or upload</button><button data-a="test" aria-pressed="false">Test records</button></div></div>
+    <div class="apane" data-a="one">
+      <form id="addForm" class="cols" autocomplete="off">
+        <div class="list">
+          <input type="text" id="aTitle" required placeholder="Title" aria-label="Title">
+          <input type="text" id="aAuthor" placeholder="Author" aria-label="Author">
+          <input type="text" id="aYear" placeholder="Year" aria-label="Year">
+          <input type="text" id="aCall" placeholder="Call number" aria-label="Call number">
+        </div>
+        <div class="list">
+          <input type="text" id="aSubj" placeholder="Subjects; separated; by semicolons" aria-label="Subjects">
+          <textarea id="aSum" placeholder="Summary" aria-label="Summary"></textarea>
+          <div class="row"><button class="btn" type="submit">Add record</button><button class="btn ghost" type="button" id="resetCat">Reset to sample</button></div>
+        </div>
+      </form>
+      <p class="kv" style="margin-top:12px">The demo model matches topics it knows and any shared words. Reuse words from your summary when you search for it.</p>
+    </div>
+    <div class="apane" data-a="bulk" hidden>
+      <textarea id="bulkText" placeholder="title,author,year,subjects,callno,status,summary" aria-label="CSV or JSON records" style="min-height:150px;font-family:var(--font-mono);font-size:12.5px"></textarea>
+      <div class="row" style="margin-top:12px"><button class="btn" id="bulkGo">Import</button><label class="btn ghost" for="bulkFile" style="cursor:pointer">Upload file</label><input type="file" id="bulkFile" accept=".csv,.tsv,.txt,.json" hidden><button class="chip" type="button" id="bulkEx">Load example</button><span class="kv" id="bulkMsg"></span></div>
+      <p class="kv" style="margin-top:12px">CSV, tab-separated or a JSON list. Only title is required.</p>
+    </div>
+    <div class="apane" data-a="test" hidden>
+      <label class="f" for="synN"><span class="hd"><span>Test records to add</span><span class="v" id="synNV">100</span></span><input type="range" id="synN" min="10" max="500" step="10" value="100"></label>
+      <div class="row" style="margin-top:12px"><button class="btn" id="synGo">Add test records</button><button class="btn ghost" id="synRm">Remove test records</button><span class="kv" id="synMsg"></span></div>
+      <p class="kv" style="margin-top:12px">The lab holds up to 2,000 records. For bigger sizes, use the stress test.</p>
+    </div>
+  </div>
+
+  <div class="panel acc">
+    <div class="row between"><div class="ph">Stress test</div>
+      <div class="seg" id="benchSeg"><button data-n="1000" aria-pressed="false">1k</button><button data-n="10000" aria-pressed="true">10k</button><button data-n="50000" aria-pressed="false">50k</button><button data-n="100000" aria-pressed="false">100k</button></div></div>
+    <p class="kv">Makes fake records in memory and times this code on your device. Your catalog is not touched.</p>
+    <div class="row"><button class="btn" id="benchBtn">Run test</button><div id="benchStatus" class="kv" style="min-height:22px"></div></div>
+    <div class="tiles">
+      <div class="tile"><span class="n">EMBED</span><b class="bignum" id="bEmbed">–</b><span class="kv" id="bEmbedN">records per second</span></div>
+      <div class="tile"><span class="n">FLAT QUERY</span><b class="bignum" id="bFlat">–</b><span class="kv">exact, every vector</span></div>
+      <div class="tile"><span class="n">IVF QUERY</span><b class="bignum" id="bIvf">–</b><span class="kv" id="bIvfN">approximate</span></div>
+      <div class="tile"><span class="n">IVF BUILD</span><b class="bignum" id="bBuild">–</b><span class="kv" id="bBuildN">clustering time</span></div>
+    </div>
+    <div class="list">
+      <div class="mb" data-b="flat"><div class="tl"><b>Flat query</b><span class="mono dim" data-t></span></div><div class="tr"><i></i></div></div>
+      <div class="mb" data-b="ivf"><div class="tl"><b>IVF query</b><span class="mono dim" data-t></span></div><div class="tr"><i></i></div></div>
+    </div>
+    <div id="benchVerdict"></div>
+    <details class="more"><summary>Past runs</summary><div class="scroll-x" id="benchHist"></div></details>
+  </div>
+</section>
+</main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+"use strict";
+
+
+/* ---------- tiny helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let toastT; function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600);}
+const fmt=(x,d=3)=>(Math.round(x*10**d)/10**d).toFixed(d);
+
+/* ---------- demo embedding model ---------- */
+const CONCEPTS=[
+['space','Space','space planet planetary interplanetary astronomy astronomer rocket orbit orbital nasa cosmos cosmic galaxy universe astronaut astronautics mars lunar moon telescope spacecraft satellite stars star solar apollo stargazing'],
+['exploration','Exploration','exploration explore explorer travel journey voyage expedition discovery adventure frontier trek navigate navigator navigators pioneer mission'],
+['architecture','Architecture','architecture architect architectural building skyscraper facade cathedral urban structure housing construction blueprint modernist modern contemporary brutalist'],
+['design','Design','design designer aesthetic interior graphic typography visual furniture style'],
+['climate','Climate','climate warming carbon environment environmental ecology sustainability sustainable energy renewable pollution weather emission greenhouse conservation solar wind'],
+['ocean','Ocean','ocean sea marine coral reef fish whale tide maritime sailing coast coastline ship'],
+['history','History','history historical ancient medieval empire civilization century archaeology archaeological revolution dynasty heritage past independence colonial excavation'],
+['war','War','war battle military conflict army soldier wartime strategy veteran front'],
+['art','Art','art painting painter sculpture museum gallery drawing artist exhibition renaissance impressionism'],
+['music','Music','music jazz symphony composer opera guitar song orchestra melody musician rhythm improvisation'],
+['programming','Programming','programming code software python algorithm computer developer database web coding automation script'],
+['ai','AI','artificial intelligence machine neural robot chatbot model embedding vector semantic'],
+['math','Math','math mathematics algebra geometry calculus statistics probability equation theorem number sampling'],
+['health','Health','health fitness nutrition wellness exercise diet wellbeing food-guidance'],
+['medicine','Medicine','medicine medical disease clinical patient surgery doctor therapy anatomy pharmacology virus vaccine immune treatment heal'],
+['food','Food','cooking cook recipe cuisine baking bake food kitchen chef meal bread sourdough flavor loaf vegetable herb fruit'],
+['plants','Plants','garden gardening plant botany flower seed soil vegetable herb fruit tree forest root fungi'],
+['fiction','Fiction','novel fiction story stories mystery thriller fantasy detective romance character narrative tale'],
+['poetry','Poetry','poetry poem poet verse lyric sonnet imagery'],
+['children','Children','children child kid picture toddler bedtime storybook young parent'],
+['economics','Business','economics economy business finance market investing money trade entrepreneur entrepreneurship management budget hiring'],
+['law','Law','law legal court justice constitution rights policy legislation copyright'],
+['education','Education and libraries','education school teaching teacher student learn learning literacy curriculum library libraries librarian librarians cataloging catalog metadata marc dublin research information archive read reading reader'],
+['psychology','Psychology','psychology psychological mind behavior cognitive emotion habit brain memory sleep stress anxiety anxious worry worried mental'],
+['sports','Sports','sport football basketball athlete olympic running soccer cricket training'],
+['photography','Photography','photography photograph camera photographer portrait film lens lighting']
+];
+const NC=CONCEPTS.length, NH=32, DIM=NC+NH;
+const STOP=new Set('a an the of for to and in on is are i me my we our want looking about book books find show tell any some what do you have how can with that this it please need get am im there their from at be as or if so'.split(' '));
+const tokenize=t=>(t.toLowerCase().match(/[a-z]+/g)||[]);
+const stem1=w=>{for(const s of ['ing','ed','s']){if(w.length>s.length+2&&w.endsWith(s))return w.slice(0,-s.length);}return w;};
+const stem=w=>stem1(stem1(w));
+const LEX=new Map();
+CONCEPTS.forEach((c,i)=>c[2].split(' ').forEach(w=>{const s=stem(w);if(!LEX.has(s))LEX.set(s,[]);if(!LEX.get(s).includes(i))LEX.get(s).push(i);}));
+const hash=s=>{let h=5381;for(const ch of s)h=((h<<5)+h+ch.charCodeAt(0))>>>0;return h%NH;};
+function embed(text,norm=true){
+  const v=new Array(DIM).fill(0),hits={};
+  for(const t of tokenize(text)){
+    if(STOP.has(t))continue;
+    const s=stem(t),cs=LEX.get(s);
+    if(cs)cs.forEach(c=>{v[c]+=1;hits[c]=(hits[c]||0)+1;}); else v[NC+hash(s)]+=0.4;
+  }
+  if(norm){const n=Math.hypot(...v)||1;for(let i=0;i<DIM;i++)v[i]/=n;}
+  return {v,hits};
+}
+const dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);
+const l2=(a,b)=>a.reduce((s,x,i)=>s+(x-b[i])**2,0);
+const cosine=(a,b)=>{const d=Math.hypot(...a)*Math.hypot(...b);return d?dot(a,b)/d:0;};
+
+/* ---------- sample catalog (invented titles for teaching) ---------- */
+const R=(title,author,year,subjects,callno,status,summary)=>({title,author,year,subjects:subjects.split('; '),callno,status,summary});
+const SAMPLE=[
+R('Interplanetary Exploration','Mira Okafor',2021,'Astronautics; Solar system; Mars missions','QB 500.22 .O43 2021','Available','A survey of crewed and robotic missions to Mars, the outer planets and beyond, with chapters on propulsion, life support and the engineering of long voyages.'),
+R('The Night Sky Handbook','Tomas Lindqvist',2018,'Astronomy; Stargazing; Telescopes','QB 64 .L56 2018','Available','A guide to observing planets, stars and galaxies with a backyard telescope.'),
+R('Contemporary Architecture','Elena Marchetti',2019,'Architecture, Modern; Building design','NA 680 .M37 2019','Available','Profiles of 40 buildings from the last two decades, from timber towers to adaptive-reuse libraries.'),
+R('The Architecture of Now','Samuel Adeyemi',2022,'Architecture; Urban design; Sustainability','NA 2500 .A34 2022','Checked out','How architects respond to dense cities, heat and new materials in current practice.'),
+R('Reading the Reef','Hana Watanabe',2017,'Coral reefs; Marine ecology','QH 95.8 .W38 2017','Available','A field guide to the life of coral reefs, tides and the fish that live there.'),
+R('Warming Planet, Rising Seas','Jorge Ibarra',2020,'Climate change; Sea level; Environment','QC 903 .I23 2020','Checked out','Explains the science of greenhouse emissions and what coastal communities face.'),
+R('Renewable Energy for Everyone','Priya Natarajan',2023,'Renewable energy; Sustainability','TJ 808 .N38 2023','Available','Solar, wind and storage explained for non-specialists, with household and city-scale examples.'),
+R('Python for Librarians','Chris Delaney',2022,'Programming; Python; Library automation','Z 678.93 .D45 2022','Available','Practical code recipes for cleaning catalog data, working with MARC records and automating reports.'),
+R('Neural Networks, Plainly','Aiko Brandt',2024,'Artificial intelligence; Machine learning; Neural networks','Q 325.5 .B73 2024','Available','An intuitive introduction to how models learn, from embeddings to chatbots.'),
+R('Statistics Without Tears','Lamar Whitfield',2016,'Statistics; Probability; Mathematics','QA 276 .W45 2016','Checked out','A friendly course in probability, sampling and reading data.'),
+R('The Kitchen Garden Year','Beatrice Holloway',2019,'Gardening; Vegetables; Soil','SB 321 .H65 2019','Available','Month-by-month advice for growing vegetables, herbs and fruit in small plots.'),
+R('Bread, Slowly','Marta Kowalczyk',2021,'Baking; Bread; Cooking','TX 769 .K69 2021','Available','Recipes and technique for sourdough and everyday loaves.'),
+R('Forests Underground','Wei Zhang',2020,'Botany; Trees; Forest ecology','QK 477 .Z43 2020','Available','How tree roots and fungi share nutrients beneath the forest floor.'),
+R('The Long Road to Independence','Oluwaseun Bello',2015,'History; Revolution; Empire','D 445 .B45 2015','Available','A history of anti-colonial movements and the empires they ended, across two centuries.'),
+R('Letters from the Front','Anneliese Roth',2014,'War; Soldiers; Military history','D 523 .R68 2014','Checked out','Wartime letters from soldiers and families, with context on strategy and daily life.'),
+R('Ancient Cities Unearthed','Rafael Medina',2018,'Archaeology; Ancient civilizations','CC 165 .M43 2018','Available','Excavations of bronze age cities and what they tell about everyday life.'),
+R('Looking at Paintings','Ingrid Solheim',2016,'Painting; Art appreciation; Museums','ND 1130 .S65 2016','Available','A beginner\'s guide to reading composition, color and technique in gallery paintings.'),
+R('Jazz: A Listener\'s Guide','Terrence Boyd',2019,'Jazz; Music; Musicians','ML 3506 .B69 2019','Available','From early ensembles to modern improvisation, with listening lists for each era.'),
+R('Light and Lens','Camille Duval',2020,'Photography; Cameras; Portraits','TR 146 .D88 2020','Available','Camera basics, lighting and composition for portrait and street photography.'),
+R('Sleep, Stress and the Mind','Nadia Rahman',2021,'Psychology; Sleep; Mental health','BF 575 .R35 2021','Available','What research says about sleep, habits and managing stress.'),
+R('Everyday Nutrition','Gabriel Costa',2018,'Nutrition; Diet; Health','RA 784 .C67 2018','Available','Evidence-based food and exercise guidance for lasting wellbeing.'),
+R('When the Body Heals','Helen Park',2022,'Medicine; Disease; Therapy','RB 37 .P37 2022','Available','How the immune system, vaccines and treatments work, written for patients and families.'),
+R('Bedtime Stories from Every Shore','Sofia Marin',2017,'Children\'s stories; Picture books','PZ 8.1 .M37 2017','Available','Twenty short tales for young children from around the world, with big illustrations.'),
+R('The Lantern Detective','Callum Reyes',2023,'Mystery fiction; Detective stories','PS 3618 .R49 2023','Checked out','A detective novel set in a harbor town where a missing lamp leads to a larger secret.'),
+R('Small Business Basics','Naomi Feldman',2019,'Entrepreneurship; Finance; Management','HD 62.7 .F45 2019','Available','Starting and running a business, from budgeting and markets to hiring.'),
+R('Know Your Rights','Idris Campbell',2020,'Law; Constitution; Justice','KF 4550 .C36 2020','Available','A plain-language guide to legal rights, courts and how policy becomes law.'),
+R('Teaching Reading Early','Lucia Ferreira',2018,'Education; Literacy; Teaching children','LB 1573 .F47 2018','Available','Methods teachers and parents use to build literacy in young children.'),
+R('Voyages of the Great Navigators','Henrik Aas',2016,'Exploration; Maritime; Sailing','G 200 .A27 2016','Available','Accounts of sea expeditions, ship navigation and the discovery of coastlines.'),
+R('Free Verse Today','Maya Ellison',2021,'Poetry; Poets','PS 615 .E45 2021','Available','Contemporary poems and notes on how poets use rhythm and imagery.'),
+R('Library Cataloging in the Age of Data','Joan Whitaker',2022,'Cataloging; Metadata; Libraries','Z 693 .W45 2022','Available','MARC, Dublin Core and linked data explained for working librarians.')
+];
+const recText=r=>`${r.title}. ${r.title}. ${r.subjects.join(' ')}. ${r.summary}`;
+
+/* ---------- state ---------- */
+const S={catalog:SAMPLE.map(r=>({...r,subjects:[...r.subjects]})),vecs:[],ivf:null,proj:null,
+  indexType:'flat',nlist:4,norm:true,metric:'cos',k:5,nprobe:2,fmt:'marc',rec:0,
+  chat:{launched:false,messages:[],title:'Library Assistant',persona:'friendly',sys:'',k:3,rag:true,trace:null,reruns:0,ins:'rag'},done:{}};
+const TASKS=[['search','Try a semantic search'],['index','Build an index'],['query','Run a FAISS query'],['launch','Launch the chatbot'],['test','Ask the chatbot a question'],['title','Change the app title'],['persona','Change the persona'],['kchg','Change retrieved results'],['scale','Explore scaling'],['data','Add your own data']];
+function mark(k){if(S.done[k])return;S.done[k]=1;renderProgress();}
+
+/* ---------- k-means, PCA, search ---------- */
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function kmeans(X,k){
+  let best=null;
+  for(let seed=1;seed<=(X.length>400?3:30);seed++){const r=kmeans1(X,k,seed),mx=Math.max(...r.lists.map(l=>l.length)),mn=Math.min(...r.lists.map(l=>l.length));
+    const score=mx-mn*0.5;if(!best||score<best.score)best={score,r};}
+  return best.r;
+}
+function kmeans1(X,k,seed){
+  const rnd=mulberry(seed*7919),n=X.length;k=Math.min(k,n);
+  const cent=[X[Math.floor(rnd()*n)].slice()];
+  while(cent.length<k){const d=X.map(x=>Math.min(...cent.map(c=>l2(x,c))));let r=rnd()*d.reduce((a,b)=>a+b,0),i=0;for(;i<n-1;i++){r-=d[i];if(r<=0)break;}cent.push(X[i].slice());}
+  let assign=new Array(n).fill(0);
+  for(let it=0;it<20;it++){
+    assign=X.map(x=>{let b=0,bd=Infinity;cent.forEach((c,j)=>{const d=l2(x,c);if(d<bd){bd=d;b=j;}});return b;});
+    for(let c=0;c<k;c++){const m=X.filter((_,i)=>assign[i]===c);if(m.length)cent[c]=cent[c].map((_,d)=>m.reduce((s,x)=>s+x[d],0)/m.length);}
+  }
+  const lists=Array.from({length:k},()=>[]);assign.forEach((c,i)=>lists[c].push(i));
+  return {centroids:cent,lists,assign};
+}
+function computePCA(){
+  const X=S.vecs,n=X.length,mean=X[0].map((_,d)=>X.reduce((s,x)=>s+x[d],0)/n);
+  let C=X.map(x=>x.map((v,d)=>v-mean[d])),comps=[];
+  for(let c=0;c<2;c++){
+    let v=Array.from({length:DIM},(_,i)=>Math.sin(i*1.7+c+1));
+    for(let it=0;it<80;it++){const w=new Array(DIM).fill(0);C.forEach(r=>{const p=dot(r,v);for(let d=0;d<DIM;d++)w[d]+=p*r[d];});const nm=Math.hypot(...w)||1;v=w.map(x=>x/nm);}
+    comps.push(v);C=C.map(r=>{const p=dot(r,v);return r.map((x,d)=>x-p*v[d]);});
+  }
+  S.proj=x=>{const c=x.map((v,d)=>v-mean[d]);return [dot(c,comps[0]),dot(c,comps[1])];};
+}
+function search(qv,k,o={}){
+  const type=o.type||(S.ivf?'ivf':'flat'),metric=o.metric||S.metric,nprobe=o.nprobe||S.nprobe;
+  let cand,probed=null;
+  if(type==='ivf'&&S.ivf){
+    const order=S.ivf.centroids.map((c,j)=>[l2(qv,c),j]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+    probed=order.slice(0,Math.min(nprobe,order.length));cand=probed.flatMap(c=>S.ivf.lists[c]);
+  } else cand=S.vecs.map((_,i)=>i);
+  const sc=cand.map(i=>({i,d:l2(qv,S.vecs[i]),cos:cosine(qv,S.vecs[i])}));
+  sc.sort(metric==='l2'?(a,b)=>a.d-b.d:(a,b)=>b.cos-a.cos);
+  return {hits:sc.slice(0,k),compared:cand.length,probed};
+}
+function keywordSearch(q){
+  const qt=tokenize(q).filter(t=>!STOP.has(t));
+  return S.catalog.map((r,i)=>{const w=new Set(tokenize(r.title+' '+r.author+' '+r.subjects.join(' ')));return {i,m:qt.filter(t=>w.has(t))};}).filter(x=>x.m.length).sort((a,b)=>b.m.length-a.m.length);
+}
+const REL=0.2;
+function rebuild(){
+  const t0=performance.now();
+  S.vecs=S.catalog.map(r=>embed(recText(r),S.norm).v);
+  S.ivf=S.indexType==='ivf'?kmeans(S.vecs,S.nlist):null;
+  computePCA();S.ms=performance.now()-t0;refreshAll();
+}
+
+/* ===================== UI layer ===================== */
+const stat=r=>`<span class="pill ${r.status==='Available'?'ok':'out'}">${r.status}</span>`;
+function recCard(i,extra='',o={}){
+  const r=S.catalog[i];
+  return `<article class="rec${o.hit?' hit':''}" style="--d:${(o.n||0)*70}ms">${o.n!=null?`<span class="rk">${o.n+1}</span>`:''}<div class="rb"><h4>${esc(r.title)}</h4><p class="m"><span>${esc(r.author)}, ${r.year}</span><span class="cn">${esc(r.callno)}</span>${stat(r)}</p>${extra}</div></article>`;
+}
+const simBar=(v,d=0)=>`<div class="sim" style="--d:${d}ms"><i style="--w:${Math.max(4,Math.min(100,v*100))}%"></i></div>`;
+function concepts(hits){
+  const e=Object.entries(hits).sort((a,b)=>b[1]-a[1]);
+  return e.length?e.map(([c,n])=>`<span class="chip acc">${esc(CONCEPTS[c][1])}${n>1?' ×'+n:''}</span>`).join(''):'<span class="kv">No known topics in this text</span>';
+}
+function bump(el,txt){el.textContent=txt;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+function bars(v){
+  const mx=Math.max(...v,1e-6);
+  return `<div class="vb" role="img" aria-label="Embedding with ${DIM} dimensions">${v.map((x,i)=>`<span class="${i>=NC?'o':''}${x?'':' z'}" style="--h:${Math.max(3,x/mx*100)}%;--d:${i*14}ms" title="${i<NC?esc(CONCEPTS[i][1]):'other words'}: ${fmt(x)}"></span>`).join('')}</div>`;
+}
+function scatter(el,qv,hitIdx=[],probed=null){
+  if(!S.proj||!el)return;
+  const P=S.vecs.map(S.proj),q=qv?S.proj(qv):null,all=q?[...P,q]:P;
+  const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const W=600,H=320,pad=34,sx=x=>pad+(x-x0)/((x1-x0)||1)*(W-2*pad),sy=y=>H-pad-(y-y0)/((y1-y0)||1)*(H-2*pad);
+  const col=i=>S.ivf?`hsl(${S.ivf.assign[i]*58+150} 48% 38%)`:'#8f846f';
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:380px;display:block" role="img" aria-label="2D map of catalog records"><rect x="1" y="1" width="${W-2}" height="${H-2}" rx="14" fill="#f0e8d7"/>`;
+  P.forEach((p,i)=>{const hit=hitIdx.indexOf(i),inP=!probed||!S.ivf||probed.includes(S.ivf.assign[i]);
+    s+=`<circle class="pt" style="animation-delay:${Math.min(i*16,500)}ms" cx="${sx(p[0])}" cy="${sy(p[1])}" r="${hit>=0?9:5.5}" fill="${col(i)}" opacity="${hit>=0?1:inP?.8:.22}" ${hit>=0?'stroke="#27221a" stroke-width="2"':''}><title>${esc(S.catalog[i].title)}</title></circle>`;
+    if(hit>=0)s+=`<text x="${sx(p[0])}" y="${sy(p[1])+3.8}" font-size="10.5" font-weight="700" text-anchor="middle" fill="#fff" pointer-events="none">${hit+1}</text>`;});
+  hitIdx.slice(0,1).forEach(i=>{const p=P[i];s+=`<text x="${sx(p[0])+12}" y="${sy(p[1])-9}" font-size="11.5" fill="#27221a">${esc(S.catalog[i].title.slice(0,24))}</text>`;});
+  if(q){const x=sx(q[0]),y=sy(q[1]);s+=`<g class="qm"><circle class="ping" cx="${x}" cy="${y}" r="11" fill="none" stroke="#d9692a" stroke-width="2"/><path d="M${x} ${y-11}L${x+11} ${y}L${x} ${y+11}L${x-11} ${y}Z" fill="#d9692a" stroke="#27221a" stroke-width="1.5"><title>Your query</title></path></g><text x="${x+16}" y="${y+4}" font-size="12.5" font-weight="700" fill="#27221a">query</text>`;}
+  s+='</svg>';
+  const leg=S.ivf?`<div class="row" style="margin-top:8px">${S.ivf.lists.map((l,c)=>`<span class="chip" style="border-color:hsl(${c*58+150} 48% 38%)">${l.length}${probed&&probed.includes(c)?' · searched':''}</span>`).join('')}</div>`:'';
+  el.innerHTML=s+leg;
+}
+function pyIndex(){
+  const ivf=S.indexType==='ivf',ip=S.metric==='cos';
+  let c=`<span class="c"># vectors: float32, shape (${S.catalog.length}, ${DIM})</span>\nimport faiss\n`;
+  if(ip)c+=`faiss.normalize_L2(vectors)\n`;
+  if(!ivf)c+=`index = faiss.${ip?'IndexFlatIP':'IndexFlatL2'}(vectors.shape[1])\nindex.add(vectors)`;
+  else c+=`d = vectors.shape[1]\nquantizer = faiss.${ip?'IndexFlatIP':'IndexFlatL2'}(d)\nindex = faiss.IndexIVFFlat(quantizer, d, ${S.nlist}${ip?', faiss.METRIC_INNER_PRODUCT':''})\nindex.train(vectors)\nindex.add(vectors)\nindex.nprobe = ${S.nprobe}`;
+  return c;
+}
+const fillRange=el=>{const mn=+el.min||0,mx=+el.max||100;el.style.setProperty('--p',((+el.value-mn)/((mx-mn)||1)*100)+'%');};
+
+/* progress ring */
+function renderProgress(){
+  const n=TASKS.filter(t=>S.done[t[0]]).length;
+  $('#ringN').textContent=n+'/'+TASKS.length;
+  $('#ringArc').style.strokeDashoffset=94.25*(1-n/TASKS.length);
+  $('#ringBtn').classList.toggle('full',n===TASKS.length);
+  const li=t=>`<li class="${S.done[t[0]]?'on':''}"><span class="tick">✓</span>${t[1]}</li>`;
+  $('#taskList').innerHTML=TASKS.map(li).join('');
+  const cc=$('#chatChk');if(cc)cc.innerHTML=TASKS.slice(3,8).map(li).join('');
+  if(n===TASKS.length&&!S.allDone){S.allDone=1;toast('Lab complete');}
+}
+
+/* ---------- Search ---------- */
+const CH1=['books about space travel','how do I grow vegetables','help my toddler learn to read','I cannot sleep and feel anxious','ocean creatures','how does a chatbot work'];
+function runSearch1(){
+  const q=$('#q1').value.trim();
+  const e=embed(q,S.norm),qn=embed(q,true);
+  $('#concepts1').innerHTML=q?concepts(e.hits):'';
+  if(!q){$('#kwRes').innerHTML=$('#semRes').innerHTML='<div class="empty">Type a question</div>';$('#lat1').textContent='';bump($('#c1k'),0);bump($('#c1s'),0);return;}
+  const allKw=keywordSearch(q),kwSet=new Set(allKw.map(x=>x.i));
+  $('#kwRes').innerHTML=allKw.length?allKw.slice(0,4).map((x,n)=>recCard(x.i,`<span class="kv">Matched: ${x.m.map(w=>`<b>${esc(w)}</b>`).join(', ')}</span>`,{n})).join(''):'<div class="empty">No word match</div>';
+  const t0=performance.now(),res=search(qn.v,5,{type:'flat',metric:'cos'});
+  $('#lat1').textContent=fmt(performance.now()-t0,2)+' ms';
+  const sem=res.hits.filter(h=>h.cos>=REL);
+  $('#semRes').innerHTML=sem.length?sem.slice(0,4).map((h,n)=>recCard(h.i,`${simBar(h.cos,n*70)}<span class="kv">${fmt(h.cos,2)} match${kwSet.has(h.i)?'':' · <span class="chip grn" style="padding:0 8px">meaning only</span>'}</span>`,{n,hit:n===0})).join(''):'<div class="empty">Nothing close. A good bot says so.</div>';
+  bump($('#c1k'),allKw.length);bump($('#c1s'),sem.length);
+}
+
+/* ---------- Index ---------- */
+function rawFmt(r,i){
+  if(S.fmt==='marc')return `=245  10$a${r.title}\n=100  1_$a${r.author}\n${r.subjects.map(s=>`=650  _0$a${s}`).join('\n')}\n=520  __$a${r.summary}\n=050  _4$a${r.callno}`;
+  if(S.fmt==='dc')return `<dc:title>${r.title}</dc:title>\n<dc:creator>${r.author}</dc:creator>\n${r.subjects.map(s=>`<dc:subject>${s}</dc:subject>`).join('\n')}\n<dc:description>${r.summary}</dc:description>\n<dc:identifier>${r.callno}</dc:identifier>`;
+  return JSON.stringify({item_id:'ARC-'+String(i+1).padStart(4,'0'),label:r.title,contributor:r.author,tags:r.subjects,abstract:r.summary,shelfmark:r.callno},null,2);
+}
+function renderRecord(){
+  const r=S.catalog[S.rec];if(!r)return;
+  $('#rawRec').textContent=rawFmt(r,S.rec);$('#embText').textContent=recText(r);
+  const e=embed(recText(r),S.norm);
+  $('#vecBars').innerHTML=bars(e.v);$('#vecChips').innerHTML=concepts(e.hits);
+  $('#vecNums').textContent='['+e.v.slice(0,8).map(x=>fmt(x,2)).join(', ')+', … ]';
+}
+function renderRecPick(){
+  $('#recPick').innerHTML=S.catalog.map((r,i)=>`<option value="${i}">${esc(r.title)}</option>`).join('');
+  S.rec=Math.min(S.rec,S.catalog.length-1);$('#recPick').value=S.rec;$('#nRec').textContent=S.catalog.length;
+}
+function renderIdxInfo(){
+  $('#idxCode').innerHTML=pyIndex();
+  if(!building)$('#idxStatus').innerHTML=`<span class="chip grn">Ready</span> ${S.ivf?'IndexIVFFlat':'IndexFlatL2'} · ${S.vecs.length} × ${DIM} · ${fmt(S.ms,1)} ms`;
+  const nl=$('#nlist');nl.max=Math.max(2,Math.min(8,Math.floor(S.catalog.length/3)));fillRange(nl);
+  $('#nlistWrap').hidden=S.indexType!=='ivf';
+  scatter($('#scatterIdx'),null,[]);
+}
+function setStep(n){
+  S.step=n;
+  $$('.stp').forEach(b=>{const s=+b.dataset.s;b.classList.toggle('on',s===n);b.classList.toggle('done',s<n);});
+  $$('#steps i').forEach((l,k)=>l.classList.toggle('on',k<n-1));
+  $$('.spane').forEach(p=>p.hidden=+p.dataset.s!==n);
+  if(n===2)renderRecord();
+  if(n===3)renderIdxInfo();
+}
+let building=false;
+function buildAnim(){
+  if(building)return;building=true;
+  const st=$('#idxStatus'),btn=$('#buildBtn');btn.disabled=true;
+  const steps=[`Reading ${S.catalog.length} records`,`Embedding to ${DIM} dims`,`Creating ${S.indexType==='ivf'?'IndexIVFFlat':'IndexFlatL2'}`];
+  let i=0;
+  (function tick(){
+    st.innerHTML=steps.map((s,j)=>`<span class="bs ${j<i?'done':j===i?'run':''}">${s}</span>`).join('');
+    if(i<steps.length){i++;setTimeout(tick,430);}
+    else{building=false;rebuild();mark('index');btn.disabled=false;toast('Index ready');}
+  })();
+}
+
+/* ---------- Query ---------- */
+const CH3=['modern architecture','space travel','sourdough bread','how do tree roots work','history of empires','legal rights'];
+function runQuery(){
+  const q=$('#q3').value.trim(),k=S.k;
+  const maxProbe=S.ivf?S.ivf.centroids.length:4;
+  if(S.nprobe>maxProbe){S.nprobe=maxProbe;$('#nprobe').value=S.nprobe;}
+  $('#kV').textContent=k;$('#nprobeV').textContent=S.nprobe;
+  $('#nprobeWrap').hidden=!S.ivf;$('#nprobe').max=maxProbe;fillRange($('#nprobe'));fillRange($('#kK'));
+  $('#idxNote').innerHTML=`Index: <b>${S.ivf?`IVFFlat · ${S.nlist} clusters`:'Flat · exact'}</b>${S.norm?'':' <span class="chip amb">not normalized</span>'}`;
+  $('#qCode').innerHTML=`<span class="c"># 1. embed the query with the same model</span>\nquery_vec = model.encode([patron_query]).astype("float32")\n${S.metric==='cos'?'faiss.normalize_L2(query_vec)\n':''}<span class="c"># 2. search</span>\nD, I = index.search(query_vec, ${k})\n<span class="c"># 3. map ids back to records</span>\nresults = [catalog[i] for i in I[0]]`;
+  if(!q){$('#lat3').textContent='';$('#qSteps').innerHTML='';$('#qRes').innerHTML='<div class="empty">Type a query</div>';scatter($('#scatterQ'),null,[]);return;}
+  const t0=performance.now(),e=embed(q,S.norm),r=search(e.v,k);
+  $('#lat3').textContent=fmt(performance.now()-t0,2)+' ms';
+  const exact=S.ivf?search(e.v,k,{type:'flat'}):null;
+  const recall=exact?r.hits.filter(h=>exact.hits.some(x=>x.i===h.i)).length:null;
+  $('#qSteps').innerHTML=`<span>Embed</span><i></i><span>${S.ivf?`${r.compared}/${S.vecs.length} compared`:`${r.compared} compared`}</span><i></i><span>Top ${k}</span>${recall!==null?`<span style="background:var(--ok-soft);border-color:transparent;color:var(--ok)">recall ${recall}/${Math.min(k,exact.hits.length)}</span>`:''}`;
+  $('#qRes').innerHTML=r.hits.map((h,n)=>recCard(h.i,`${simBar(h.cos,n*70)}<span class="kv mono">cos ${fmt(h.cos,2)} · L2 ${fmt(h.d,2)} ${h.cos<REL?'<span class="chip amb" style="padding:0 8px">weak</span>':''}</span>`,{n,hit:n===0})).join('');
+  scatter($('#scatterQ'),e.v,r.hits.map(h=>h.i),r.probed);
+}
+
+/* ---------- Chat ---------- */
+const PERSONAS={
+ friendly:{sys:'You are Libby, a friendly reference librarian. Answer only from the catalog records provided. If the answer is not in them, say so.',hi:'Hello! I\'m Libby. What would you like to find today?',open:'Here\'s what I found:',none:'I couldn\'t find that in our catalog. Try different words, or ask a librarian at the desk.',close:'Want availability or call numbers?'},
+ concise:{sys:'You are a concise catalog assistant. Reply with titles and call numbers only. Use only the records provided.',hi:'Ready.',open:'Matches:',none:'No matching records.',close:''},
+ academic:{sys:'You are a research librarian. Use a formal tone, cite call numbers and mention subject headings. Use only the records provided.',hi:'Good day. How may I assist your research?',open:'The catalog holds these relevant resources:',none:'The catalog has no relevant records. Consider interlibrary loan or a subject specialist.',close:'Related material may sit under the subject headings above.'},
+ kids:{sys:'You are a children\'s librarian. Use simple, warm words. Recommend only books from the records provided.',hi:'Hi there, book explorer! What do you want to read about?',open:'Ooh, look at these:',none:'Hmm, I couldn\'t find a book about that. Want to try another idea?',close:'Ask me for more!'}
+};
+function buildPrompt(q,hits){
+  const c=S.chat;
+  return `SYSTEM: ${c.sys}\n\nCONTEXT (top ${c.k} from FAISS):\n`+(hits.length?hits.map((h,n)=>{const r=S.catalog[h.i];return `[${n+1}] ${r.title} by ${r.author} (${r.callno}, ${r.status}): ${r.summary}`;}).join('\n'):'(no records above the similarity threshold)')+`\n\nQUESTION: ${q}\nAnswer using only the context above.`;
+}
+function respond(q){
+  const c=S.chat,P=PERSONAS[c.persona],low=q.toLowerCase();
+  const prev=[...c.messages].reverse().find(m=>m.role==='assistant'&&m.sources&&m.sources.length);
+  c.trace={q,mode:'retrieval',hits:[],prompt:'',note:''};
+  if(/^(hi|hello|hey|good (morning|afternoon))\b/.test(low)&&low.length<30){c.trace.mode='greeting';c.trace.note='No retrieval needed.';return {text:P.hi,sources:[]};}
+  if(prev&&/available|checked out|on the shelf|in stock|borrow/.test(low)){c.trace.mode='follow-up';c.trace.note='Reused earlier results from session_state.';return {text:prev.sources.map(i=>`${S.catalog[i].title}: ${S.catalog[i].status}`).join('\n'),sources:[]};}
+  if(prev&&/call number|where|shelf|locate|map/.test(low)){c.trace.mode='follow-up';c.trace.note='Reused earlier results from session_state.';return {text:prev.sources.map(i=>`${S.catalog[i].title}: ${S.catalog[i].callno}`).join('\n'),sources:[]};}
+  if(prev&&/tell me more|more about|first one|that one/.test(low)){const r=S.catalog[prev.sources[0]];c.trace.mode='follow-up';c.trace.note='Reused the first earlier result.';return {text:`${r.title} by ${r.author} (${r.year}). ${r.summary}`,sources:[]};}
+  const e=embed(q,S.norm),res=search(e.v,c.k),rel=res.hits.filter(h=>h.cos>=REL);
+  c.trace.hits=rel;c.trace.prompt=buildPrompt(q,rel);
+  if(!c.rag){
+    c.trace.mode='no retrieval';c.trace.note='Retrieval is off. The model has nothing to check against.';
+    const best=Object.entries(e.hits).sort((a,b)=>b[1]-a[1])[0];
+    const topic=best?CONCEPTS[best[0]][1].toLowerCase():(tokenize(q).filter(t=>!STOP.has(t))[0]||'this subject');
+    const T=topic[0].toUpperCase()+topic.slice(1);
+    return {text:`Great question! We have "The Complete Guide to ${T}" by J. Anderson (call number XX 100 .A53 2019), available now. I also recommend "${T}: A Modern Introduction".`,sources:[],flag:true};}
+  if(!rel.length)return {text:P.none,sources:[]};
+  let t=P.open;
+  if(c.persona==='academic')t+='\n'+rel.map(h=>`• ${S.catalog[h.i].title}. Subjects: ${S.catalog[h.i].subjects.join('; ')}.`).join('\n');
+  if(c.persona==='concise')t+='\n'+rel.map(h=>`${S.catalog[h.i].title}, ${S.catalog[h.i].callno}`).join('\n');
+  if(c.persona==='friendly'||c.persona==='kids')t+='\n'+rel.map((h,n)=>`${n+1}. ${S.catalog[h.i].title} by ${S.catalog[h.i].author}`).join('\n');
+  if(P.close)t+='\n\n'+P.close;
+  return {text:t,sources:rel.map(h=>h.i)};
+}
+let typeTimer=null;
+function renderApp(focus){
+  const c=S.chat,b=$('#appBody');clearInterval(typeTimer);
+  if(!c.launched){
+    b.innerHTML=`<div class="boot"><div class="term" id="term"><div><span style="color:var(--code-dim)">$</span> streamlit run streamlit_app.py</div></div><button class="btn big" id="runBtn">Run app</button></div>`;
+    $('#runBtn').onclick=e=>{
+      e.target.disabled=true;const term=$('#term');
+      const lines=['Loading library_resources.index',`Loaded ${S.vecs.length} vectors`,'<span class="ok">You can now view your Streamlit app in your browser.</span>'];
+      lines.forEach((l,i)=>setTimeout(()=>term.insertAdjacentHTML('beforeend',`<div>${l}</div>`),380*(i+1)));
+      setTimeout(()=>{c.launched=true;mark('launch');renderApp(true);},380*lines.length+450);
+    };
+    return;
+  }
+  const last=c.messages[c.messages.length-1],typing=last&&last.role==='assistant'&&!last.shown;
+  const html=c.messages.map(m=>{
+    const anim=m===last&&typing;
+    return `<div class="msg ${m.role}"><div class="av">${m.role==='user'?'You':'AI'}</div><div class="bub"><div class="txt" ${anim?'data-type="1"':''}>${anim?'':esc(m.text)}</div>${m.flag?'<span class="chip amb" style="align-self:flex-start">Invented. Not in your catalog</span>':''}${(m.sources&&m.sources.length)?`<div class="src${anim?' hide':''}">${m.sources.map((i,n)=>recCard(i,'',{n})).join('')}</div>`:''}</div></div>`;
+  }).join('')+(c.thinking?'<div class="msg"><div class="av">AI</div><div class="think"><i></i><i></i><i></i></div></div>':'');
+  b.innerHTML=`<div class="term" style="padding:8px 13px"><span class="ok">Streamlit is running</span></div>
+   <h3 id="appTitle">${esc(c.title)}</h3>
+   <div class="msgs" id="msgs">${html||'<div class="empty">Ask about the catalog</div>'}</div>
+   ${c.messages.length?'':`<div class="row" id="sugg4">${['books about space travel','how do I grow vegetables','bedtime stories for a toddler'].map(s=>`<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
+   <form class="chatform" id="chatForm" autocomplete="off"><input type="text" id="chatIn" placeholder="Ask about catalog or research guides..." aria-label="Chat message"><button class="btn" type="submit">Send</button></form>`;
+  const m=$('#msgs');m.scrollTop=m.scrollHeight;
+  $('#chatForm').onsubmit=e=>{e.preventDefault();send($('#chatIn').value);};
+  $$('#sugg4 .chip').forEach(x=>x.onclick=()=>send(x.dataset.s));
+  if(focus)$('#chatIn').focus({preventScroll:true});
+  const t=b.querySelector('[data-type]');
+  if(t){
+    let i=0;const full=last.text;
+    typeTimer=setInterval(()=>{
+      i=Math.min(full.length,i+2);t.textContent=full.slice(0,i);m.scrollTop=m.scrollHeight;
+      if(i>=full.length){clearInterval(typeTimer);last.shown=true;c.busy=false;const s=b.querySelector('.src');if(s)s.classList.remove('hide');m.scrollTop=m.scrollHeight;}
+    },14);
+  } else if(!c.thinking)c.busy=false;
+}
+function send(q){
+  q=q.trim();const c=S.chat;if(!q||c.busy)return;mark('test');
+  c.messages.forEach(m=>m.shown=true);
+  c.messages.push({role:'user',text:q,shown:true});c.reruns++;c.thinking=true;c.busy=true;renderApp(true);
+  setTimeout(()=>{
+    const r=respond(q);c.thinking=false;
+    c.messages.push({role:'assistant',text:r.text,sources:r.sources,flag:r.flag,shown:false});
+    renderApp(true);renderIns();
+  },700);
+}
+function appCode(){
+  const c=S.chat,sys=c.sys.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+  return `<span class="c"># streamlit_app.py</span>
+import streamlit as st, faiss, json
+from sentence_transformers import SentenceTransformer
+
+SYSTEM_PROMPT = "${esc(sys)}"
+K = ${c.k}
+
+<span class="c"># Step 1: load the pre-computed FAISS index</span>
+model = SentenceTransformer("all-MiniLM-L6-v2")
+index = faiss.read_index("library_resources.index")
+catalog = json.load(open("catalog.json"))
+
+<span class="c"># Step 2: interface and chat history</span>
+st.title("${esc(c.title)}")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+<span class="c"># Step 3: input -> FAISS -> LLM -> render</span>
+if prompt := st.chat_input("Ask about catalog or research guides..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    q = model.encode([prompt]).astype("float32")
+    _, ids = index.search(q, K)
+    context = "\\n".join(catalog[i]["text"] for i in ids[0])
+${c.rag?`    answer = call_llm(SYSTEM_PROMPT, context, prompt)`:`    answer = call_llm(SYSTEM_PROMPT, "", prompt)   <span class="c"># no context: may invent titles</span>`}
+    st.session_state.messages.append({"role": "assistant", "content": answer})
+    st.chat_message("assistant").write(answer)`;
+}
+function renderIns(){
+  const c=S.chat,t=c.ins,b=$('#insBody');
+  $$('#insSeg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.i===t));
+  if(t==='code'){b.innerHTML=`<div class="codewrap" data-file="streamlit_app.py"><pre class="code" id="appCodeBox">${appCode()}</pre><button class="cp" data-copy="appCodeBox">Copy</button></div>`;return;}
+  if(t==='state'){b.innerHTML=`<p class="kv" style="margin-bottom:10px">Script reruns: <b>${c.reruns}</b></p><div class="codewrap" data-file="session_state"><pre class="code">st.session_state.messages = ${esc(JSON.stringify(c.messages.map(m=>({role:m.role,content:m.text})),null,2))}</pre></div>`;return;}
+  const tr=c.trace;
+  if(!tr){b.innerHTML='<div class="empty">Ask the chatbot something to see retrieve, augment, generate.</div>';return;}
+  b.innerHTML=`<div class="row" style="margin-bottom:12px"><span class="chip">${esc(tr.mode)}</span><span class="kv">${esc(tr.q)}${tr.note?' · '+esc(tr.note):''}</span></div>
+   <div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+    <div class="list"><span class="ph">1 Retrieve</span>${tr.hits.length?tr.hits.map((h,n)=>`<div class="rec" style="--d:${n*70}ms"><div class="rb"><h4>${esc(S.catalog[h.i].title)}</h4>${simBar(h.cos,n*70)}<span class="kv mono">cos ${fmt(h.cos,2)}</span></div></div>`).join(''):'<div class="empty">None above threshold</div>'}</div>
+    <div class="list"><span class="ph">2 Augment</span><div class="codewrap" data-file="prompt"><pre class="code" style="max-height:230px;white-space:pre-wrap">${esc(tr.prompt||'(not used this turn)')}</pre></div></div>
+    <div class="list"><span class="ph">3 Generate</span><div class="rec" style="display:block">${c.rag?'Answer limited to the records above.':'No context. The model fills the gap with plausible, invented titles.'}</div></div>
+   </div>`;
+}
+
+/* ---------- Scale ---------- */
+const nOf=v=>Math.round(10**(3+v/100*5));
+const hum=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e3?(n/1e3).toFixed(n>=1e5?0:1)+'k':String(n);
+const bytes=b=>b>=1e9?(b/1e9).toFixed(1)+' GB':b>=1e6?(b/1e6).toFixed(1)+' MB':(b/1e3).toFixed(0)+' KB';
+S.dims=768;
+function renderScale(){
+  const N=nOf(+$('#sN').value),d=S.dims;fillRange($('#sN'));
+  $('#sNV').textContent=hum(N)+' records';
+  const nlist=Math.max(4,Math.round(4*Math.sqrt(N))),nprobe=Math.min(nlist,Math.max(1,Math.round(nlist/32))),m=d/8;
+  const flat=N*d*4,ivf=flat+nlist*d*4,pq=N*m+nlist*d*4+256*d*4;
+  const sc={flat:N,ivf:Math.round(N*nprobe/nlist+nlist),pq:Math.round(N*nprobe/nlist+nlist)},mem={flat,ivf,pq},mx=ivf;
+  const pick=N<=2e5?'flat':N<=5e6?'ivf':'pq';
+  ['flat','ivf','pq'].forEach(k=>{
+    const el=$(`.mb[data-k="${k}"]`);
+    el.querySelector('i').style.width=Math.max(1,mem[k]/mx*100)+'%';
+    el.querySelector('[data-t]').textContent=`${bytes(mem[k])} · scans ${hum(sc[k])}`;
+    el.classList.toggle('pick',k===pick);
+  });
+  $('#suggName').textContent={flat:'IndexFlatL2',ivf:'IndexIVFFlat',pq:'IndexIVFPQ'}[pick];
+  $('#suggWhy').textContent={flat:'Small enough to search exactly.',ivf:'Clusters let it skip most of the catalog.',pq:'Compression keeps it in memory. Measure recall.'}[pick];
+  $('#scaleCode').innerHTML=pick==='flat'?`index = faiss.IndexFlatL2(${d})`:pick==='ivf'?`quantizer = faiss.IndexFlatL2(${d})\nindex = faiss.IndexIVFFlat(quantizer, ${d}, ${nlist})\nindex.train(vectors); index.add(vectors)\nindex.nprobe = ${nprobe}`:`quantizer = faiss.IndexFlatL2(${d})\nindex = faiss.IndexIVFPQ(quantizer, ${d}, ${nlist}, ${m}, 8)\nindex.train(vectors); index.add(vectors)\nindex.nprobe = ${nprobe}`;
+}
+
+/* ---------- Data tab ---------- */
+S.dbSrc='all';S.dbShow=25;S.benchN=10000;S.runs=[];
+const CAP=2000;
+const ALIAS={title:['title','name','label'],author:['author','creator','contributor'],year:['year','date','published'],subjects:['subjects','subject','tags','keywords'],callno:['callno','call number','call_number','call','shelfmark','identifier'],status:['status','availability'],summary:['summary','description','abstract','notes']};
+function parseCSV(text){
+  const first=text.split('\n')[0],d=(first.includes('\t')&&!first.includes(','))?'\t':',';
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else if(ch==='"')q=true;
+    else if(ch===d){row.push(cur);cur='';}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(c=>c.trim()!==''))rows.push(row);row=[];}
+    else cur+=ch;
+  }
+  row.push(cur);if(row.some(c=>c.trim()!==''))rows.push(row);
+  return rows;
+}
+function toRecord(o){
+  const pick=k=>{for(const a of ALIAS[k]){if(o[a]!==undefined&&o[a]!==null&&String(o[a]).trim()!=='')return o[a];}return '';};
+  const title=String(pick('title')).trim();if(!title)return null;
+  let subj=pick('subjects');subj=Array.isArray(subj)?subj:String(subj).split(/[;|]/);
+  const y=parseInt(pick('year'),10),st=String(pick('status'));
+  return {title,author:String(pick('author')).trim()||'Unknown',year:(y>0&&y<3000)?y:new Date().getFullYear(),subjects:subj.map(x=>String(x).trim()).filter(Boolean),callno:String(pick('callno')).trim()||'NEW 001',status:/out|loan|unavail/i.test(st)?'Checked out':'Available',summary:String(pick('summary')).trim()||title,src:'yours'};
+}
+function parseBulk(text){
+  text=text.trim();if(!text)return {recs:[],skipped:0,err:'Nothing to import.'};
+  let objs;
+  try{
+    if(text[0]==='['||text[0]==='{'){
+      let j=JSON.parse(text);if(!Array.isArray(j))j=j.records||j.items||[j];
+      objs=j.filter(x=>x&&typeof x==='object').map(x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k.toLowerCase().trim(),v])));
+    }else{
+      const rows=parseCSV(text),h=rows[0].map(c=>c.toLowerCase().trim()),hasHeader=h.some(c=>ALIAS.title.includes(c));
+      const cols=hasHeader?h:['title','author','year','subjects','callno','status','summary'];
+      objs=(hasHeader?rows.slice(1):rows).map(r=>Object.fromEntries(cols.map((c,i)=>[c,r[i]])));
+    }
+  }catch(e){return {recs:[],skipped:0,err:'Could not read that. Use CSV or a JSON list.'};}
+  const recs=objs.map(toRecord).filter(Boolean);
+  return {recs,skipped:objs.length-recs.length};
+}
+const EXAMPLE='title,author,year,subjects,callno,status,summary\nCoastal Birds of the North Sea,Ana Reyes,2022,Birds; Marine ecology,QL 696 .R49 2022,Available,A field guide to seabirds and tides along the coast.\n"Pottery, Wheel and Kiln",Dev Patel,2019,Ceramics; Crafts,TT 920 .P38 2019,Checked out,Hand-building and throwing techniques for beginners.\nUrban Beekeeping,Lena Fischer,2021,Bees; Gardening,SF 523 .F57 2021,Available,Keeping bees on rooftops and in small city gardens.';
+function addRecords(list){
+  const take=list.slice(0,Math.max(0,CAP-S.catalog.length));
+  take.forEach(r=>S.catalog.push(r));
+  if(take.length)S.rec=S.catalog.length-1;
+  return take.length;
+}
+function doImport(text){
+  const {recs,skipped,err}=parseBulk(text),msg=$('#bulkMsg');
+  if(err){msg.textContent=err;return;}
+  if(!recs.length){msg.textContent='No rows with a title.';return;}
+  const n=addRecords(recs);
+  msg.textContent=`Added ${n}${skipped?`, skipped ${skipped}`:''}${n<recs.length?`, lab is full (${CAP})`:''}`;
+  rebuild();mark('data');toast(`Imported ${n} records`);
+}
+/* synthetic data from the same topic word lists the toy model knows */
+const FILL='a guide to the of and for in on with from about'.split(' ');
+const FIRST='Mira Tomas Elena Samuel Hana Jorge Priya Chris Aiko Lamar Beatrice Marta Wei Oluwaseun Anneliese Rafael Ingrid Terrence Camille Nadia Gabriel Helen Sofia Callum Naomi Idris Lucia Henrik Maya Joan'.split(' ');
+const LAST='Okafor Lindqvist Marchetti Adeyemi Watanabe Ibarra Natarajan Delaney Brandt Whitfield Holloway Kowalczyk Zhang Bello Roth Medina Solheim Boyd Duval Rahman Costa Park Marin Reyes Feldman Campbell Ferreira Aas Ellison Whitaker'.split(' ');
+const CW=CONCEPTS.map(c=>c[2].split(' '));
+const pw=(rnd,c)=>CW[c][Math.floor(rnd()*CW[c].length)];
+const capW=w=>w[0].toUpperCase()+w.slice(1);
+function synth(rnd){
+  const a=Math.floor(rnd()*NC),b=Math.floor(rnd()*NC),year=1990+Math.floor(rnd()*35),sum=[];
+  for(let k=0;k<14;k++){const r=rnd();sum.push(r<.45?pw(rnd,a):r<.7?pw(rnd,b):FILL[Math.floor(rnd()*FILL.length)]);}
+  return {title:[pw(rnd,a),pw(rnd,a),pw(rnd,b)].map(capW).join(' '),author:FIRST[Math.floor(rnd()*FIRST.length)]+' '+LAST[Math.floor(rnd()*LAST.length)],year,subjects:[CONCEPTS[a][1],CONCEPTS[b][1]],callno:`TS ${100+Math.floor(rnd()*900)} .T${10+Math.floor(rnd()*90)} ${year}`,status:rnd()<.8?'Available':'Checked out',summary:'A '+sum.join(' ')+'.',src:'synthetic'};
+}
+function renderDb(){
+  const f=$('#dbFilter').value.trim().toLowerCase(),src=S.dbSrc;
+  const all=S.catalog.map((r,i)=>({r,i})),cnt={sample:0,yours:0,synthetic:0};
+  all.forEach(x=>cnt[x.r.src||'sample']++);
+  $('#stTotal').textContent=S.catalog.length;$('#stYours').textContent=cnt.yours;$('#stTest').textContent=cnt.synthetic;
+  $('#stNote').textContent=`${cnt.sample} sample`;
+  $('#stMem').textContent=bytes(S.catalog.length*DIM*4);$('#stMemNote').textContent=`${S.catalog.length} × ${DIM} floats`;
+  const rows=all.filter(x=>(src==='all'||(x.r.src||'sample')===src)&&(!f||(x.r.title+' '+x.r.author+' '+x.r.subjects.join(' ')+' '+x.r.callno).toLowerCase().includes(f)));
+  const shown=rows.slice(0,S.dbShow);
+  const tag=r=>r.src==='yours'?'<span class="tag y">yours</span>':r.src==='synthetic'?'<span class="tag t">test</span>':'';
+  $('#dbTable').innerHTML=`<div class="dr h"><span>Title</span><span>Author</span><span>Year</span><span>Subjects</span><span>Call no.</span><span>Status</span><span></span></div>`+
+    (shown.length?shown.map(x=>`<div class="dr"><span class="t">${esc(x.r.title)}${tag(x.r)}</span><span>${esc(x.r.author)}</span><span class="mono">${x.r.year}</span><span class="dim">${esc(x.r.subjects.slice(0,3).join(' · '))}</span><span class="cn" style="justify-self:start">${esc(x.r.callno)}</span><span>${stat(x.r)}</span><button class="x" data-del="${x.i}" aria-label="Delete ${esc(x.r.title)}">×</button></div>`).join(''):'<div class="empty" style="margin:12px">No records match.</div>');
+  $('#dbCount').textContent=`Showing ${shown.length} of ${rows.length}`;
+  $('#dbMore').hidden=shown.length>=rows.length;
+}
+/* stress test: optimized typed-array code, run on this device */
+const wait=()=>new Promise(r=>setTimeout(r,40));
+function topK(V,q,k,n,cand){
+  const bs=new Float64Array(k).fill(-Infinity),bi=new Int32Array(k).fill(-1);
+  for(let t=0;t<n;t++){
+    const i=cand?cand[t]:t,o=i*DIM;let s=0;
+    for(let d=0;d<DIM;d++)s+=V[o+d]*q[d];
+    if(s>bs[k-1]){let p=k-1;while(p>0&&bs[p-1]<s){bs[p]=bs[p-1];bi[p]=bi[p-1];p--;}bs[p]=s;bi[p]=i;}
+  }
+  return bi;
+}
+async function runBench(){
+  if(S.benchBusy)return;S.benchBusy=true;
+  const N=S.benchN,st=$('#benchStatus'),btn=$('#benchBtn');btn.disabled=true;
+  const stages=['Generating records','Embedding','Flat search','Building IVF','IVF search'];
+  const show=i=>{st.innerHTML=stages.map((s,j)=>`<span class="bs ${j<i?'done':j===i?'run':''}">${s}</span>`).join('');};
+  try{
+    const rnd=mulberry(N+7);
+    show(0);await wait();
+    const texts=new Array(N);for(let i=0;i<N;i++)texts[i]=recText(synth(rnd));
+    show(1);await wait();
+    const V=new Float32Array(N*DIM);let t0=performance.now();
+    for(let i=0;i<N;i++)V.set(embed(texts[i],true).v,i*DIM);
+    const embedMs=performance.now()-t0;
+    const Q=30,qs=[];
+    for(let i=0;i<Q;i++){const a=Math.floor(rnd()*NC),b=Math.floor(rnd()*NC);qs.push(Float32Array.from(embed(`${pw(rnd,a)} ${pw(rnd,a)} ${pw(rnd,b)}`,true).v));}
+    show(2);await wait();
+    const K=5;t0=performance.now();
+    const exact=qs.map(q=>topK(V,q,K,N,null));
+    const flatMs=(performance.now()-t0)/Q;
+    show(3);await wait();
+    const nlist=Math.max(4,Math.round(Math.sqrt(N)/4)),nprobe=Math.max(2,Math.round(nlist*0.12));
+    t0=performance.now();
+    const C=new Float32Array(nlist*DIM),TR=Math.min(N,20000);
+    for(let c=0;c<nlist;c++){const i=Math.floor(rnd()*TR);for(let d=0;d<DIM;d++)C[c*DIM+d]=V[i*DIM+d];}
+    const nearest=(o)=>{let best=0,bd=Infinity;for(let c=0;c<nlist;c++){let dd=0;const co=c*DIM;for(let d=0;d<DIM;d++){const x=V[o+d]-C[co+d];dd+=x*x;}if(dd<bd){bd=dd;best=c;}}return best;};
+    for(let it=0;it<5;it++){
+      const sums=new Float64Array(nlist*DIM),cnt=new Int32Array(nlist);
+      for(let i=0;i<TR;i++){const c=nearest(i*DIM);cnt[c]++;for(let d=0;d<DIM;d++)sums[c*DIM+d]+=V[i*DIM+d];}
+      for(let c=0;c<nlist;c++)if(cnt[c])for(let d=0;d<DIM;d++)C[c*DIM+d]=sums[c*DIM+d]/cnt[c];
+    }
+    const lists=Array.from({length:nlist},()=>[]);
+    for(let i=0;i<N;i++)lists[nearest(i*DIM)].push(i);
+    const buildMs=performance.now()-t0;
+    show(4);await wait();
+    t0=performance.now();let hit=0;
+    qs.forEach((q,qi)=>{
+      const ds=[];for(let c=0;c<nlist;c++){let dd=0;for(let d=0;d<DIM;d++){const x=q[d]-C[c*DIM+d];dd+=x*x;}ds.push([dd,c]);}
+      ds.sort((a,b)=>a[0]-b[0]);
+      const cand=[];for(let j=0;j<nprobe;j++)for(const id of lists[ds[j][1]])cand.push(id);
+      const got=topK(V,q,K,cand.length,cand);
+      got.forEach(id=>{if(id>=0&&exact[qi].includes(id))hit++;});
+    });
+    const ivfMs=(performance.now()-t0)/Q,recall=hit/(Q*K);
+    const r={N,embedMs,rate:N/(embedMs/1000),flatMs,ivfMs,buildMs,recall,nlist,nprobe,mem:N*DIM*4};
+    S.runs.unshift(r);S.runs=S.runs.slice(0,6);showBench(r);mark('data');
+    st.innerHTML='<span class="chip grn">Done</span>';
+  }catch(e){st.textContent='The test stopped. Try a smaller size.';}
+  btn.disabled=false;S.benchBusy=false;
+}
+function showBench(r){
+  bump($('#bEmbed'),hum(Math.round(r.rate)));$('#bEmbedN').textContent='records per second';
+  bump($('#bFlat'),fmt(r.flatMs,r.flatMs<10?2:1)+' ms');
+  bump($('#bIvf'),fmt(r.ivfMs,r.ivfMs<10?2:1)+' ms');$('#bIvfN').textContent=`recall ${Math.round(r.recall*100)}% · ${r.nprobe} of ${r.nlist} clusters`;
+  bump($('#bBuild'),r.buildMs>=1000?fmt(r.buildMs/1000,1)+' s':Math.round(r.buildMs)+' ms');$('#bBuildN').textContent=`${r.nlist} clusters`;
+  const mx=Math.max(r.flatMs,r.ivfMs,1e-6),bf=$('.mb[data-b="flat"]'),bi=$('.mb[data-b="ivf"]');
+  bf.querySelector('i').style.width='100%';bf.querySelector('[data-t]').textContent=fmt(r.flatMs,2)+' ms';
+  bi.querySelector('i').style.width=Math.max(2,r.ivfMs/mx*100)+'%';bi.querySelector('[data-t]').textContent=fmt(r.ivfMs,2)+' ms';
+  const capF=Math.round(r.N*30/Math.max(r.flatMs,1e-3)),capI=Math.round(r.N*30/Math.max(r.ivfMs,1e-3));
+  const lvl=r.flatMs<5?['grn','Instant']:r.flatMs<30?['grn','Smooth']:r.flatMs<100?['amb','Noticeable lag']:['amb','Slow'];
+  $('#benchVerdict').innerHTML=`<div class="row"><span class="chip ${lvl[0]}">${lvl[1]}</span><span class="kv">At ${hum(r.N)} records, ${fmt(r.flatMs,1)} ms per flat search. Rough estimate: flat stays under 30 ms to about <b>${hum(capF)}</b> records, IVF to about <b>${hum(capI)}</b>. Real FAISS in C++ is much faster.</span></div>`;
+  $('#benchHist').innerHTML=`<table class="ht"><tr><th>Records</th><th>Embed/s</th><th>Flat ms</th><th>IVF ms</th><th>Recall</th><th>Build ms</th><th>Vectors</th></tr>${S.runs.map(x=>`<tr><td>${hum(x.N)}</td><td>${hum(Math.round(x.rate))}</td><td>${fmt(x.flatMs,2)}</td><td>${fmt(x.ivfMs,2)}</td><td>${Math.round(x.recall*100)}%</td><td>${Math.round(x.buildMs)}</td><td>${bytes(x.mem)}</td></tr>`).join('')}</table>`;
+}
+
+/* ---------- wiring ---------- */
+function refreshAll(){renderRecPick();renderRecord();renderIdxInfo();runSearch1();runQuery();renderIns();renderDb();}
+function moveInd(){
+  const b=$('#tabs button[aria-selected="true"]'),ind=$('#ind');if(!b)return;
+  ind.style.width=b.offsetWidth+'px';ind.style.transform=`translateX(${b.offsetLeft}px)`;
+  b.scrollIntoView({inline:'center',block:'nearest'});
+}
+function showTab(t){
+  if(!$('#pane-'+t))t='search';
+  $$('section.pane').forEach(p=>p.hidden=p.id!=='pane-'+t);
+  $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  moveInd();
+  if(t==='scale')renderScale();
+}
+$$('#tabs button').forEach(b=>b.onclick=()=>{if(location.hash.slice(1)===b.dataset.tab)showTab(b.dataset.tab);else location.hash=b.dataset.tab;});
+window.addEventListener('hashchange',()=>showTab(location.hash.slice(1)));
+window.addEventListener('resize',moveInd);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(moveInd);
+$('#ringBtn').onclick=()=>{const p=$('#pop');p.hidden=!p.hidden;$('#ringBtn').setAttribute('aria-expanded',!p.hidden);};
+document.addEventListener('click',e=>{if(!e.target.closest('.rwrap')){$('#pop').hidden=true;$('#ringBtn').setAttribute('aria-expanded','false');}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#pop').hidden=true;}});
+
+function chips(el,list,input,fn){$(el).innerHTML=list.map(s=>`<button class="chip" type="button">${esc(s)}</button>`).join('');$$(el+' .chip').forEach((b,i)=>b.onclick=()=>{$(input).value=list[i];fn();});}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-copy]');if(!b)return;
+  const el=document.getElementById(b.dataset.copy),txt=el.textContent;
+  const sel=()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);};
+  try{navigator.clipboard.writeText(txt).then(()=>{toast('Copied');b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400);},()=>{sel();toast('Press Ctrl+C to copy');});}catch(_){sel();toast('Press Ctrl+C to copy');}
+});
+$$('[data-go]').forEach(b=>b.onclick=()=>setStep(+b.dataset.go));
+$$('.stp').forEach(b=>b.onclick=()=>setStep(+b.dataset.s));
+
+const doS=()=>{mark('search');runSearch1();};$('#q1').oninput=doS;chips('#chips1',CH1,'#q1',doS);
+const doQ=()=>{mark('query');runQuery();};$('#q3').oninput=doQ;chips('#chips3',CH3,'#q3',doQ);
+$('#recPick').onchange=e=>{S.rec=+e.target.value;renderRecord();};
+$$('#fmtSeg button').forEach(b=>b.onclick=()=>{S.fmt=b.dataset.f;$$('#fmtSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderRecord();});
+$$('#typeSeg button').forEach(b=>b.onclick=()=>{S.indexType=b.dataset.t;$$('#typeSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderIdxInfo();});
+$('#nlist').oninput=e=>{S.nlist=+e.target.value;$('#nlistV').textContent=S.nlist;fillRange(e.target);};
+$('#normChk').onchange=e=>{S.norm=e.target.checked;};
+$('#buildBtn').onclick=buildAnim;
+$('#embedAll').onclick=()=>{const t=performance.now(),n=S.catalog.map(r=>embed(recText(r),S.norm)).length;$('#embedStatus').textContent=`${n} vectors in ${fmt(performance.now()-t,1)} ms`;};
+$('#kK').oninput=e=>{S.k=+e.target.value;runQuery();};
+$('#nprobe').oninput=e=>{S.nprobe=+e.target.value;runQuery();};
+$$('#metricSeg button').forEach(b=>b.onclick=()=>{S.metric=b.dataset.m;$$('#metricSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));runQuery();renderIdxInfo();});
+$('#addForm').onsubmit=e=>{e.preventDefault();
+  const rec=toRecord({title:$('#aTitle').value,author:$('#aAuthor').value,year:$('#aYear').value,subjects:$('#aSubj').value,callno:$('#aCall').value,summary:$('#aSum').value});
+  if(!rec)return;
+  if(!addRecords([rec])){toast(`The lab is full (${CAP} records)`);return;}
+  e.target.reset();rebuild();mark('data');toast(`Added "${rec.title}"`);};
+$('#resetCat').onclick=()=>{S.catalog=SAMPLE.map(r=>({...r,subjects:[...r.subjects]}));S.rec=0;rebuild();toast('Sample catalog restored');};
+$$('#srcSeg button').forEach(b=>b.onclick=()=>{S.dbSrc=b.dataset.s;S.dbShow=25;$$('#srcSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderDb();});
+$('#dbFilter').oninput=()=>{S.dbShow=25;renderDb();};
+$('#dbMore').onclick=()=>{S.dbShow+=25;renderDb();};
+$('#dbTable').onclick=e=>{const b=e.target.closest('[data-del]');if(!b)return;if(S.catalog.length<=1){toast('Keep at least one record');return;}S.catalog.splice(+b.dataset.del,1);rebuild();};
+$$('#addSeg button').forEach(b=>b.onclick=()=>{$$('#addSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));$$('.apane').forEach(p=>p.hidden=p.dataset.a!==b.dataset.a);});
+$('#bulkEx').onclick=()=>{$('#bulkText').value=EXAMPLE;};
+$('#bulkGo').onclick=()=>doImport($('#bulkText').value);
+$('#bulkFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$('#bulkText').value=String(rd.result).slice(0,2000000);doImport($('#bulkText').value);};rd.readAsText(f);e.target.value='';};
+$('#synN').oninput=e=>{$('#synNV').textContent=e.target.value;};
+$('#synGo').onclick=()=>{const rnd=mulberry(Date.now()%1e9),n=+$('#synN').value,list=Array.from({length:n},()=>synth(rnd)),added=addRecords(list);
+  $('#synMsg').textContent=added<n?`Added ${added}, the lab is full (${CAP})`:`Added ${added}`;if(added){rebuild();mark('data');toast(`Added ${added} test records`);}};
+$('#synRm').onclick=()=>{const before=S.catalog.length;S.catalog=S.catalog.filter(r=>r.src!=='synthetic');if(!S.catalog.length)S.catalog=SAMPLE.map(r=>({...r,subjects:[...r.subjects]}));S.rec=0;$('#synMsg').textContent=`Removed ${before-S.catalog.length}`;rebuild();};
+$$('#benchSeg button').forEach(b=>b.onclick=()=>{S.benchN=+b.dataset.n;$$('#benchSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+$('#benchBtn').onclick=runBench;
+/* chat settings */
+const syncSys=()=>{$('#cSys').value=S.chat.sys=PERSONAS[S.chat.persona].sys;};
+$('#cTitle').oninput=e=>{S.chat.title=e.target.value||'Library Assistant';if(e.target.value&&e.target.value!=='Library Assistant')mark('title');const t=$('#appTitle');if(t)t.textContent=S.chat.title;renderIns();};
+$$('#personaSeg button').forEach(b=>b.onclick=()=>{S.chat.persona=b.dataset.p;$$('#personaSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));syncSys();mark('persona');renderIns();});
+$('#cSys').oninput=e=>{S.chat.sys=e.target.value;renderIns();};
+$('#cK').oninput=e=>{S.chat.k=+e.target.value;$('#cKV').textContent=S.chat.k;fillRange(e.target);if(S.chat.k!==3)mark('kchg');renderIns();};
+$('#cRag').onchange=e=>{S.chat.rag=e.target.checked;renderIns();};
+$$('#insSeg button').forEach(b=>b.onclick=()=>{S.chat.ins=b.dataset.i;renderIns();});
+$('#sN').oninput=()=>{mark('scale');renderScale();};
+$$('#dimSeg button').forEach(b=>b.onclick=()=>{S.dims=+b.dataset.d;mark('scale');$$('#dimSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderScale();});
+
+syncSys();renderProgress();renderApp();rebuild();setStep(1);
+$$('input[type=range]').forEach(r=>{fillRange(r);r.addEventListener('input',()=>fillRange(r));});
+showTab(location.hash.slice(1)||'search');
+
+</script>
+
+</body></html>
